@@ -2,6 +2,8 @@ import { DataSource } from 'typeorm';
 import { config } from 'dotenv';
 import { join } from 'path';
 import { Project } from '../projects/entities/project.entity';
+import { ProjectGroup } from '../projects/entities/project-group.entity';
+import { ProjectLifecycleStageEntity } from '../projects/entities/project-lifecycle-stage.entity';
 import { Release } from '../releases/entities/release.entity';
 import { getEnvOrThrow, getEnvOrDefault } from '../config/config.utils';
 
@@ -16,7 +18,7 @@ export default new DataSource({
   username: getEnvOrThrow('POSTGRES_USER'),
   password: getEnvOrThrow('POSTGRES_PASSWORD'),
   database: getEnvOrThrow('POSTGRES_DB'),
-  entities: [Project, Release],
+  entities: [Project, ProjectGroup, ProjectLifecycleStageEntity, Release],
   migrations: [join(__dirname, 'migrations', '*.ts')],
   synchronize: false,
   logging: nodeEnv === 'development',

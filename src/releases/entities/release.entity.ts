@@ -15,16 +15,29 @@ import { Project } from '../../projects/entities/project.entity';
 export enum ReleaseStatus {
   DRAFT = 'draft',
   CREATED = 'created',
+  SCHEDULED = 'scheduled',
   DELIVERING = 'delivering',
   DELIVERED = 'delivered',
+  DEPLOYED = 'deployed',
   FAILED = 'failed',
+  ROLLED_BACK = 'rolled_back',
+  CANCELLED = 'cancelled',
+}
+
+export enum ReleaseEnvironment {
+  DEVELOPMENT = 'development',
+  STAGING = 'staging',
+  PRODUCTION = 'production',
 }
 
 @Entity('releases')
-@Check(`status IN ('draft', 'created', 'delivering', 'delivered', 'failed')`)
+@Check(
+  `status IN ('draft', 'created', 'scheduled', 'delivering', 'delivered', 'deployed', 'failed', 'rolled_back', 'cancelled')`,
+)
 @Index(['projectId', 'deletedAt'])
 @Index(['status', 'deletedAt'])
 @Index(['snapshotId', 'deletedAt'])
+@Index(['environment', 'deletedAt'])
 @Index(['projectId', 'version'], { unique: true, where: 'deleted_at IS NULL' })
 export class Release {
   @PrimaryGeneratedColumn('uuid')
@@ -50,6 +63,34 @@ export class Release {
     default: ReleaseStatus.DRAFT,
   })
   status: ReleaseStatus;
+
+  @Column({
+    type: 'varchar',
+    length: 20,
+    default: ReleaseEnvironment.DEVELOPMENT,
+  })
+  environment: ReleaseEnvironment;
+
+  @Column({ type: 'timestamptz', name: 'scheduled_at', nullable: true })
+  scheduledAt: Date | null;
+
+  @Column({ type: 'timestamptz', name: 'released_at', nullable: true })
+  releasedAt: Date | null;
+
+  @Column({ type: 'timestamptz', name: 'deployed_at', nullable: true })
+  deployedAt: Date | null;
+
+  @Column({ type: 'timestamptz', name: 'rollback_at', nullable: true })
+  rollbackAt: Date | null;
+
+  @Column({ type: 'text', nullable: true })
+  changelog: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  notes: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  tags: string | null; // JSON array of tags
 
   @Column({ type: 'jsonb', default: {} })
   structure: Record<string, any>;
