@@ -6,9 +6,12 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   OneToMany,
+  ManyToMany,
+  JoinTable,
   Index,
 } from 'typeorm';
 import { Release } from '../../releases/entities/release.entity';
+import { Tag } from './tag.entity';
 
 export enum ProjectStatus {
   ACTIVE = 'active',
@@ -24,10 +27,9 @@ export enum LifecycleStage {
 }
 
 @Entity('projects')
-@Index(['companyId', 'deletedAt'])
-@Index(['slug', 'deletedAt'])
-@Index(['targetId', 'deletedAt'])
-@Index(['status', 'deletedAt'])
+@Index(['slug'], { where: 'deleted_at IS NULL' })
+@Index(['ownerId'], { where: 'deleted_at IS NULL' })
+@Index(['status'], { where: 'deleted_at IS NULL' })
 export class Project {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -46,16 +48,22 @@ export class Project {
     length: 20,
     default: ProjectStatus.ACTIVE,
   })
-  @Index()
   status: ProjectStatus;
 
   @Column({ type: 'uuid', name: 'owner_id', nullable: true })
-  @Index()
   ownerId: string | null;
 
+  @ManyToMany(() => Tag, (tag) => tag.projects)
+  @JoinTable({
+    name: 'project_tags',
+    joinColumn: { name: 'project_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'tag_id', referencedColumnName: 'id' },
+  })
+  tags: Tag[];
+
   @Column({
-    type: 'jsonb',
-    default: [],
+    type: 'simple-array',
+    default: '',
     name: 'lifecycle_stages',
   })
   lifecycleStages: LifecycleStage[];

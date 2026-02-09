@@ -8,7 +8,6 @@ import {
   ManyToOne,
   JoinColumn,
   Index,
-  Check,
 } from 'typeorm';
 import { Project } from '../../projects/entities/project.entity';
 
@@ -25,19 +24,15 @@ export enum ReleaseStatus {
 }
 
 @Entity('releases')
-@Check(
-  `status IN ('draft', 'created', 'scheduled', 'delivering', 'delivered', 'deployed', 'failed', 'rolled_back', 'cancelled')`,
-)
-@Index(['projectId', 'deletedAt'])
-@Index(['status', 'deletedAt'])
-@Index(['snapshotId', 'deletedAt'])
+@Index(['projectId'], { where: 'deleted_at IS NULL' })
+@Index(['status'], { where: 'deleted_at IS NULL' })
+@Index(['snapshotId'], { where: 'deleted_at IS NULL' })
 @Index(['projectId', 'version'], { unique: true, where: 'deleted_at IS NULL' })
 export class Release {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({ type: 'uuid', name: 'project_id' })
-  @Index()
   projectId: string;
 
   @ManyToOne(() => Project, (project) => project.releases, { onDelete: 'CASCADE' })
@@ -51,26 +46,17 @@ export class Release {
   snapshotId: string | null;
 
   @Column({
-    type: 'varchar',
-    length: 20,
+    type: 'enum',
+    enum: ReleaseStatus,
     default: ReleaseStatus.DRAFT,
   })
   status: ReleaseStatus;
-
-  @Column({ type: 'timestamptz', name: 'scheduled_at', nullable: true })
-  scheduledAt: Date | null;
-
-  @Column({ type: 'timestamptz', name: 'released_at', nullable: true })
-  releasedAt: Date | null;
 
   @Column({ type: 'text', nullable: true })
   changelog: string | null;
 
   @Column({ type: 'text', nullable: true })
   notes: string | null;
-
-  @Column({ type: 'text', nullable: true })
-  tags: string | null;
 
   @Column({ type: 'jsonb', default: {} })
   structure: Record<string, any>;
