@@ -94,7 +94,6 @@ message Asset {
 // Projects Service Requests and Responses
 message GetProjectRequest {
   string id = 1;
-  string company_id = 2;
 }
 
 message ListProjectsRequest {

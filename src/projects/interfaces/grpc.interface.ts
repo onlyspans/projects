@@ -34,7 +34,6 @@ export interface Project {
 
 export interface GetProjectRequest {
   id: string;
-  companyId?: string;
 }
 
 export interface ListProjectsRequest {
