@@ -1,6 +1,7 @@
 export interface ApplicationConfig {
   nodeEnv: string;
   port: number;
+  grpcPort: number;
   cors: {
     origin: string[];
     credentials: boolean;

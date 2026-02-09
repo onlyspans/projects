@@ -1,11 +1,49 @@
 import { NestFactory } from '@nestjs/core';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { ReflectionService } from '@grpc/reflection';
+import { join } from 'path';
 import { AppModule } from './app.module';
 import { ConfigService } from './config/config.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
+
+  app.setGlobalPrefix('api');
+  app.enableCors(configService.app.cors);
+
+  const config = new DocumentBuilder()
+    .setTitle('Projects Microservice API')
+    .setDescription(`REST API Projects Microservice. gRPC API: ${configService.app.grpcPort}`)
+    .setVersion('1.0')
+    .addTag('projects')
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api-docs', app, document);
+
+  const grpcPort = configService.app.grpcPort;
+  const protoPath = join(__dirname, 'proto/projects.proto');
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.GRPC,
+    options: {
+      package: 'projects',
+      protoPath,
+      url: `0.0.0.0:${grpcPort}`,
+      onLoadPackageDefinition: (pkg, server) => {
+        new ReflectionService(pkg).addToServer(server);
+      },
+    },
+  });
+
+  await app.startAllMicroservices();
+
   const port = configService.app.port;
   await app.listen(port);
+
+  console.log(`🚀 HTTP Server (REST API) is running on: http://localhost:${port}/api`);
+  console.log(`📚 Swagger documentation: http://localhost:${port}/api-docs`);
+  console.log(`🔌 gRPC Microservice is running on: 0.0.0.0:${grpcPort}`);
 }
+
 bootstrap();

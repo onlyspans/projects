@@ -16,6 +16,7 @@ export default registerAs('app', (): ApplicationConfig => {
   return {
     nodeEnv: getEnvOrThrow('NODE_ENV'),
     port: parseInt(getEnvOrThrow('PORT'), 10),
+    grpcPort: parseInt(getEnvOrThrow('GRPC_PORT'), 10),
     cors: getCorsConfig(),
   };
 });
