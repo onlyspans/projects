@@ -30,8 +30,8 @@ export class ReleasesController {
   @ApiParam({ name: 'id', description: 'Release ID (UUID)' })
   @ApiResponse({ status: 200, description: 'Release found', type: Object })
   @ApiResponse({ status: 404, description: 'Release not found' })
-  async findOne(@Param('id') id: string): Promise<Release> {
-    return this.releasesService.findOne(id);
+  async findOne(@Param('projectId') projectId: string, @Param('id') id: string): Promise<Release> {
+    return this.releasesService.findOne(id, projectId);
   }
 
   @Post()
@@ -46,20 +46,26 @@ export class ReleasesController {
 
   @Put(':id')
   @ApiOperation({ summary: 'Update a release' })
+  @ApiParam({ name: 'projectId', description: 'Project ID (UUID)' })
   @ApiParam({ name: 'id', description: 'Release ID (UUID)' })
   @ApiResponse({ status: 200, description: 'Release updated', type: Object })
   @ApiResponse({ status: 404, description: 'Release not found' })
-  async update(@Param('id') id: string, @Body() updateReleaseDto: UpdateReleaseDto): Promise<Release> {
-    return this.releasesService.update(id, updateReleaseDto);
+  async update(
+    @Param('projectId') projectId: string,
+    @Param('id') id: string,
+    @Body() updateReleaseDto: UpdateReleaseDto,
+  ): Promise<Release> {
+    return this.releasesService.update(id, updateReleaseDto, projectId);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a release (soft delete)' })
+  @ApiParam({ name: 'projectId', description: 'Project ID (UUID)' })
   @ApiParam({ name: 'id', description: 'Release ID (UUID)' })
   @ApiResponse({ status: 204, description: 'Release deleted' })
   @ApiResponse({ status: 404, description: 'Release not found' })
-  async remove(@Param('id') id: string): Promise<void> {
-    return this.releasesService.remove(id);
+  async remove(@Param('projectId') projectId: string, @Param('id') id: string): Promise<void> {
+    return this.releasesService.remove(id, projectId);
   }
 }

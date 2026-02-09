@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ReleasesController } from './controllers/releases.controller';
-import { ReleasesByIdController } from './controllers/releases-by-id.controller';
 import { ReleasesGrpcController } from './grpc/releases.grpc.controller';
 import { ReleasesService } from './services/releases.service';
 import { ReleasesRepository } from './repositories/releases.repository';
@@ -11,7 +10,7 @@ import { ProjectsModule } from '@projects/projects.module';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Release, Project]), ProjectsModule],
-  controllers: [ReleasesController, ReleasesByIdController, ReleasesGrpcController],
+  controllers: [ReleasesController, ReleasesGrpcController],
   providers: [ReleasesService, ReleasesRepository],
   exports: [ReleasesService, ReleasesRepository],
 })

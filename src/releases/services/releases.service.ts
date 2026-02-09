@@ -35,11 +35,14 @@ export class ReleasesService {
   }
 
   /**
-   * Get release by ID
+   * Get release by ID. If projectId is provided, ensures the release belongs to that project.
    */
-  async findOne(id: string): Promise<Release> {
+  async findOne(id: string, projectId?: string): Promise<Release> {
     const release = await this.releasesRepository.findOne(id);
     if (!release) {
+      throw new NotFoundException(`Release with ID ${id} not found`);
+    }
+    if (projectId !== undefined && release.projectId !== projectId) {
       throw new NotFoundException(`Release with ID ${id} not found`);
     }
     return release;
@@ -75,10 +78,10 @@ export class ReleasesService {
   }
 
   /**
-   * Update a release
+   * Update a release. If projectId is provided, ensures the release belongs to that project.
    */
-  async update(id: string, updateReleaseDto: UpdateReleaseDto): Promise<Release> {
-    const release = await this.findOne(id);
+  async update(id: string, updateReleaseDto: UpdateReleaseDto, projectId?: string): Promise<Release> {
+    await this.findOne(id, projectId);
 
     const updateData: Partial<Release> = {};
     if (updateReleaseDto.status !== undefined) updateData.status = updateReleaseDto.status;
@@ -117,10 +120,10 @@ export class ReleasesService {
   }
 
   /**
-   * Soft delete a release
+   * Soft delete a release. If projectId is provided, ensures the release belongs to that project.
    */
-  async remove(id: string): Promise<void> {
-    await this.findOne(id);
+  async remove(id: string, projectId?: string): Promise<void> {
+    await this.findOne(id, projectId);
     await this.releasesRepository.softDelete(id);
   }
 
