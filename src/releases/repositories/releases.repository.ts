@@ -2,9 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere } from 'typeorm';
 import { Release, ReleaseStatus } from '../entities/release.entity';
-import { Project } from '../../projects/entities/project.entity';
-import { PaginatedResponse } from '../../common/interfaces/paginated-response.interface';
-import { calculatePagination, calculateTotalPages } from '../../common/utils/pagination.util';
+import { Project } from '@projects/entities/project.entity';
+import { PaginatedResponse } from '@common/interfaces/paginated-response.interface';
+import { calculatePagination, calculateTotalPages } from '@common/utils/pagination.util';
 
 export interface FindReleasesOptions {
   projectId: string;

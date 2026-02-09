@@ -9,7 +9,7 @@ import {
   JoinColumn,
   Index,
 } from 'typeorm';
-import { Project } from '../../projects/entities/project.entity';
+import { Project } from '@projects/entities/project.entity';
 
 export enum ReleaseStatus {
   DRAFT = 'draft',

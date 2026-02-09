@@ -10,8 +10,8 @@ import {
   JoinTable,
   Index,
 } from 'typeorm';
-import { Release } from '../../releases/entities/release.entity';
-import { Tag } from '../../tags/entities/tag.entity';
+import { Release } from '@releases/entities/release.entity';
+import { Tag } from '@tags/entities/tag.entity';
 
 export enum ProjectStatus {
   ACTIVE = 'active',

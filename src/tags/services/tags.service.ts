@@ -4,7 +4,7 @@ import { Tag } from '../entities/tag.entity';
 import { CreateTagDto } from '../dto/create-tag.dto';
 import { UpdateTagDto } from '../dto/update-tag.dto';
 import { QueryTagsDto } from '../dto/query-tags.dto';
-import { PaginatedResponse } from '../../common/interfaces/paginated-response.interface';
+import { PaginatedResponse } from '@common/interfaces/paginated-response.interface';
 
 @Injectable()
 export class TagsService {

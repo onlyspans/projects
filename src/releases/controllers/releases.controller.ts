@@ -5,7 +5,7 @@ import { CreateReleaseDto } from '../dto/create-release.dto';
 import { UpdateReleaseDto } from '../dto/update-release.dto';
 import { QueryReleasesDto } from '../dto/query-releases.dto';
 import { Release } from '../entities/release.entity';
-import { PaginatedResponse } from '../../common/interfaces/paginated-response.interface';
+import { PaginatedResponse } from '@common/interfaces/paginated-response.interface';
 
 @ApiTags('releases')
 @Controller('projects/:projectId/releases')

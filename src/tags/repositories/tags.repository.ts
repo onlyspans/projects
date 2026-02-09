@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere } from 'typeorm';
 import { Tag } from '../entities/tag.entity';
-import { PaginatedResponse } from '../../common/interfaces/paginated-response.interface';
-import { calculatePagination, calculateTotalPages } from '../../common/utils/pagination.util';
+import { PaginatedResponse } from '@common/interfaces/paginated-response.interface';
+import { calculatePagination, calculateTotalPages } from '@common/utils/pagination.util';
 
 export interface FindTagsOptions {
   page?: number;

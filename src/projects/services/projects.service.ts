@@ -4,7 +4,7 @@ import { Project, ProjectStatus } from '../entities/project.entity';
 import { CreateProjectDto } from '../dto/create-project.dto';
 import { UpdateProjectDto } from '../dto/update-project.dto';
 import { QueryProjectsDto } from '../dto/query-projects.dto';
-import { PaginatedResponse } from '../../common/interfaces/paginated-response.interface';
+import { PaginatedResponse } from '@common/interfaces/paginated-response.interface';
 
 @Injectable()
 export class ProjectsService {

@@ -1,11 +1,11 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { ReleasesRepository } from '../repositories/releases.repository';
-import { ProjectsService } from '../../projects/services/projects.service';
+import { ProjectsService } from '@projects/services/projects.service';
 import { Release, ReleaseStatus } from '../entities/release.entity';
 import { CreateReleaseDto } from '../dto/create-release.dto';
 import { UpdateReleaseDto } from '../dto/update-release.dto';
 import { QueryReleasesDto } from '../dto/query-releases.dto';
-import { PaginatedResponse } from '../../common/interfaces/paginated-response.interface';
+import { PaginatedResponse } from '@common/interfaces/paginated-response.interface';
 import { ReleaseStructure } from '../interfaces/release-structure.interface';
 
 @Injectable()

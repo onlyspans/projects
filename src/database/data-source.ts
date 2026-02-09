@@ -1,10 +1,10 @@
 import { DataSource } from 'typeorm';
 import { config } from 'dotenv';
 import { join } from 'path';
-import { Project } from '../projects/entities/project.entity';
-import { Tag } from '../tags/entities/tag.entity';
-import { Release } from '../releases/entities/release.entity';
-import { getEnvOrThrow, getEnvOrDefault } from '../config/config.utils';
+import { Project } from '@projects/entities/project.entity';
+import { Tag } from '@tags/entities/tag.entity';
+import { Release } from '@releases/entities/release.entity';
+import { getEnvOrThrow, getEnvOrDefault } from '@config/config.utils';
 
 config();
 
