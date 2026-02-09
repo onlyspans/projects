@@ -70,7 +70,7 @@ export class Release {
   notes: string | null;
 
   @Column({ type: 'text', nullable: true })
-  tags: string | null; // JSON array of tags
+  tags: string | null;
 
   @Column({ type: 'jsonb', default: {} })
   structure: Record<string, any>;
@@ -78,12 +78,12 @@ export class Release {
   @Column({ type: 'jsonb', default: {} })
   metadata: Record<string, any>;
 
-  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
+  @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  @DeleteDateColumn({ type: 'timestamptz', name: 'deleted_at', nullable: true })
+  @DeleteDateColumn({ name: 'deleted_at', nullable: true })
   deletedAt: Date | null;
 }

@@ -41,13 +41,6 @@ export class Project {
   @Column({ type: 'text', nullable: true })
   description: string | null;
 
-  @Column({ type: 'uuid', name: 'company_id' })
-  @Index()
-  companyId: string;
-
-  @Column({ type: 'uuid', name: 'target_id', nullable: true })
-  targetId: string | null;
-
   @Column({
     type: 'varchar',
     length: 20,
@@ -60,26 +53,23 @@ export class Project {
   @Index()
   ownerId: string | null;
 
-  @Column({ type: 'text', nullable: true })
-  tags: string | null; // JSON array of tags, e.g., ["frontend", "api", "critical"]
-
   @Column({
     type: 'jsonb',
     default: [],
     name: 'lifecycle_stages',
   })
-  lifecycleStages: LifecycleStage[]; // Array of environments in order, e.g., [LifecycleStage.DEVELOPMENT, LifecycleStage.STAGING, LifecycleStage.PRODUCTION]
+  lifecycleStages: LifecycleStage[];
 
   @Column({ type: 'jsonb', default: {} })
   metadata: Record<string, any>;
 
-  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
+  @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  @DeleteDateColumn({ type: 'timestamptz', name: 'deleted_at', nullable: true })
+  @DeleteDateColumn({ name: 'deleted_at', nullable: true })
   deletedAt: Date | null;
 
   @OneToMany(() => Release, (release) => release.project)
