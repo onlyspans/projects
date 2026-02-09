@@ -16,6 +16,7 @@ export interface DatabaseConfig {
   password: string;
   database: string;
   synchronize: boolean;
+  autoMigrate: boolean;
 }
 
 export interface AppConfig {

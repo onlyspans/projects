@@ -5,3 +5,7 @@ export const getEnvOrThrow = (key: string): string => {
   }
   return value;
 };
+
+export const getEnvOrDefault = (key: string, defaultValue: string): string => {
+  return process.env[key] || defaultValue;
+};
