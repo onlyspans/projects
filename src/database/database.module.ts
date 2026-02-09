@@ -3,8 +3,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { join } from 'path';
 import { Project } from '../projects/entities/project.entity';
-import { ProjectGroup } from '../projects/entities/project-group.entity';
-import { ProjectLifecycleStageEntity } from '../projects/entities/project-lifecycle-stage.entity';
 import { Release } from '../releases/entities/release.entity';
 import { ConfigService } from '../config/config.service';
 
@@ -25,7 +23,7 @@ import { ConfigService } from '../config/config.service';
           username: dbConfig.username,
           password: dbConfig.password,
           database: dbConfig.database,
-          entities: [Project, ProjectGroup, ProjectLifecycleStageEntity, Release],
+          entities: [Project, Release],
           synchronize: dbConfig.synchronize,
           logging: isDevelopment,
           migrations: [join(__dirname, 'migrations', '*.{ts,js}')],

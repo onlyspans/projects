@@ -24,12 +24,6 @@ export enum ReleaseStatus {
   CANCELLED = 'cancelled',
 }
 
-export enum ReleaseEnvironment {
-  DEVELOPMENT = 'development',
-  STAGING = 'staging',
-  PRODUCTION = 'production',
-}
-
 @Entity('releases')
 @Check(
   `status IN ('draft', 'created', 'scheduled', 'delivering', 'delivered', 'deployed', 'failed', 'rolled_back', 'cancelled')`,
@@ -37,7 +31,6 @@ export enum ReleaseEnvironment {
 @Index(['projectId', 'deletedAt'])
 @Index(['status', 'deletedAt'])
 @Index(['snapshotId', 'deletedAt'])
-@Index(['environment', 'deletedAt'])
 @Index(['projectId', 'version'], { unique: true, where: 'deleted_at IS NULL' })
 export class Release {
   @PrimaryGeneratedColumn('uuid')
@@ -64,24 +57,11 @@ export class Release {
   })
   status: ReleaseStatus;
 
-  @Column({
-    type: 'varchar',
-    length: 20,
-    default: ReleaseEnvironment.DEVELOPMENT,
-  })
-  environment: ReleaseEnvironment;
-
   @Column({ type: 'timestamptz', name: 'scheduled_at', nullable: true })
   scheduledAt: Date | null;
 
   @Column({ type: 'timestamptz', name: 'released_at', nullable: true })
   releasedAt: Date | null;
-
-  @Column({ type: 'timestamptz', name: 'deployed_at', nullable: true })
-  deployedAt: Date | null;
-
-  @Column({ type: 'timestamptz', name: 'rollback_at', nullable: true })
-  rollbackAt: Date | null;
 
   @Column({ type: 'text', nullable: true })
   changelog: string | null;

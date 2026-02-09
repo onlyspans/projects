@@ -6,13 +6,9 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   OneToMany,
-  ManyToOne,
-  JoinColumn,
   Index,
 } from 'typeorm';
 import { Release } from '../../releases/entities/release.entity';
-import { ProjectGroup } from './project-group.entity';
-import { ProjectLifecycleStageEntity } from './project-lifecycle-stage.entity';
 
 export enum ProjectStatus {
   ACTIVE = 'active',
@@ -20,20 +16,17 @@ export enum ProjectStatus {
   SUSPENDED = 'suspended',
 }
 
-export enum ProjectLifecycleStage {
+export enum LifecycleStage {
   DEVELOPMENT = 'development',
   TESTING = 'testing',
   STAGING = 'staging',
   PRODUCTION = 'production',
-  MAINTENANCE = 'maintenance',
-  DEPRECATED = 'deprecated',
 }
 
 @Entity('projects')
 @Index(['companyId', 'deletedAt'])
 @Index(['slug', 'deletedAt'])
 @Index(['targetId', 'deletedAt'])
-@Index(['groupId', 'deletedAt'])
 @Index(['status', 'deletedAt'])
 export class Project {
   @PrimaryGeneratedColumn('uuid')
@@ -55,14 +48,6 @@ export class Project {
   @Column({ type: 'uuid', name: 'target_id', nullable: true })
   targetId: string | null;
 
-  @Column({ type: 'uuid', name: 'group_id', nullable: true })
-  @Index()
-  groupId: string | null;
-
-  @ManyToOne(() => ProjectGroup, (group) => group.projects, { nullable: true })
-  @JoinColumn({ name: 'group_id' })
-  group: ProjectGroup | null;
-
   @Column({
     type: 'varchar',
     length: 20,
@@ -78,6 +63,13 @@ export class Project {
   @Column({ type: 'text', nullable: true })
   tags: string | null; // JSON array of tags, e.g., ["frontend", "api", "critical"]
 
+  @Column({
+    type: 'jsonb',
+    default: [],
+    name: 'lifecycle_stages',
+  })
+  lifecycleStages: LifecycleStage[]; // Array of environments in order, e.g., [LifecycleStage.DEVELOPMENT, LifecycleStage.STAGING, LifecycleStage.PRODUCTION]
+
   @Column({ type: 'jsonb', default: {} })
   metadata: Record<string, any>;
 
@@ -92,7 +84,4 @@ export class Project {
 
   @OneToMany(() => Release, (release) => release.project)
   releases: Release[];
-
-  @OneToMany(() => ProjectLifecycleStageEntity, (lifecycleStage) => lifecycleStage.project)
-  lifecycleStages: ProjectLifecycleStageEntity[];
 }
