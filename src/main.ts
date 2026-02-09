@@ -30,7 +30,7 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('Projects Microservice API')
-    .setDescription(`REST API Projects Microservice. gRPC API: ${configService.app.grpcPort}`)
+    .setDescription(`REST API Projects Microservice. gRPC API PORT: ${configService.app.grpcPort}`)
     .setVersion('1.0')
     .build();
   const document = SwaggerModule.createDocument(app, config);
@@ -41,7 +41,7 @@ async function bootstrap() {
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.GRPC,
     options: {
-      package: 'projects',
+      package: 'projects.v1',
       protoPath,
       url: `0.0.0.0:${grpcPort}`,
       onLoadPackageDefinition: (pkg, server) => {
