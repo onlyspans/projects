@@ -1,6 +1,5 @@
 import { Controller, Get, HttpStatus, HttpException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { GrpcMethod } from '@nestjs/microservices';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
@@ -37,13 +36,5 @@ export class AppController {
         HttpStatus.SERVICE_UNAVAILABLE,
       );
     }
-  }
-
-  @GrpcMethod('ProjectsService', 'HealthCheck')
-  healthCheck(data: { service: string }): { status: string; message: string } {
-    return {
-      status: 'OK',
-      message: `Projects microservice is healthy. Service: ${data.service || 'unknown'}`,
-    };
   }
 }

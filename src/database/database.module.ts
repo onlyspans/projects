@@ -3,7 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { join } from 'path';
 import { Project } from '../projects/entities/project.entity';
-import { Tag } from '../projects/entities/tag.entity';
+import { Tag } from '../tags/entities/tag.entity';
 import { Release } from '../releases/entities/release.entity';
 import { ConfigService } from '../config/config.service';
 
