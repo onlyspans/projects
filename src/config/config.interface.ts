@@ -3,7 +3,7 @@ export interface ApplicationConfig {
   port: number;
   grpcPort: number;
   cors: {
-    origin: string[];
+    origin: string | string[];
     credentials: boolean;
   };
 }

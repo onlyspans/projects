@@ -1,108 +1,203 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Projects Microservice
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Микросервис управления проектами и релизами в составе **Developer Platform (OnlySpans)**. Входит в конфигурационный слой платформы и отвечает за хранение метаданных проектов, версионирование релизов и координацию с сервисами доставки.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Описание
 
-## Description
+**Projects** — центральный сервис для работы с проектами разработки: CRUD проектов и релизов, тегирование, жизненный цикл (development → testing → staging → production) и передача структуры релиза в **Snapper** для создания снапшотов и доставки.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+### Роль в архитектуре
 
-## Project setup
-
-This project uses [Bun](https://bun.sh) as the package manager and runtime.
-
-First, make sure you have Bun installed. If not, install it:
-
-```bash
-curl -fsSL https://bun.sh/install | bash
+```
+targets-plane → projects → processes / variables / assets
+                      ↓
+                    snapper
 ```
 
-Then install dependencies:
+- **REST API** — для фронтенда: управление проектами, релизами и тегами через HTTP/JSON.
+- **gRPC API** — для микросервисов: типобезопасное взаимодействие (targets-plane, snapper и др.), получение структуры релиза, обновление статусов.
+- В потоке **создания релиза**: валидация конфигурации и передача структуры релиза в Snapper после создания снапшота.
+- В потоке **доставки релиза**: хранение и обновление метаданных проектов и релизов, координация с processes.
+
+### Основные сущности
+
+| Сущность   | Описание |
+|-----------|----------|
+| **Project** | Проект: название, slug, статус (active/archived/suspended), владелец, стадии жизненного цикла, теги, произвольные metadata. Связан с релизами и тегами. |
+| **Release** | Релиз версии проекта: semver, снапшот из Snapper, статус (draft → created → scheduled → delivering → delivered/deployed/failed/rolled_back/cancelled), changelog, notes, структура конфигурации (processes, variables, assets) для доставки. |
+| **Tag**     | Тег для категоризации проектов: имя, описание, цвет (hex). Связь многие-ко-многим с проектами. |
+
+### Стек
+
+- **Runtime:** [Bun](https://bun.sh)
+- **Framework:** [NestJS](https://nestjs.com) 11
+- **ORM:** TypeORM, PostgreSQL
+- **API:** REST (Express), gRPC (Protocol Buffers), [Swagger](https://swagger.io) (OpenAPI)
+- **Валидация:** class-validator, class-transformer
+
+Подробные требования и описание API — в [.agents/guide.md](.agents/guide.md). Спецификация и обсуждение в репозитории [onlyspans/issues](https://github.com/onlyspans/issues) (issues по projects).
+
+---
+
+## Требования
+
+- [Bun](https://bun.sh) ≥ 1.0
+- PostgreSQL 16 (или использовать Docker)
+
+---
+
+## Быстрый старт
+
+### 1. Установка зависимостей
 
 ```bash
-$ bun install
+bun install
 ```
 
-## Compile and run the project
+### 2. Переменные окружения
+
+Скопируйте пример и при необходимости отредактируйте:
 
 ```bash
-# development
-$ bun run start
-
-# watch mode
-$ bun run start:dev
-
-# production mode
-$ bun run start:prod
+cp .env.example .env
 ```
 
-## Run tests
+Основные переменные (значения по умолчанию из `.env.example`):
+
+| Переменная        | Описание              | По умолчанию   |
+|-------------------|-----------------------|----------------|
+| `NODE_ENV`        | Окружение             | `development`  |
+| `PORT`            | Порт HTTP API         | `4000`         |
+| `GRPC_PORT`       | Порт gRPC             | `4001`         |
+| `POSTGRES_HOST`   | Хост PostgreSQL       | `localhost`   |
+| `POSTGRES_PORT`   | Порт PostgreSQL       | `5432`         |
+| `POSTGRES_USER`   | Пользователь БД       | `postgres`     |
+| `POSTGRES_PASSWORD` | Пароль БД          | `postgres`     |
+| `POSTGRES_DB`     | Имя базы              | `projects_db`  |
+| `AUTO_MIGRATE`    | Запуск миграций при старте | `false`  |
+| `CORS_ORIGIN`     | Разрешённые origins для CORS | см. `.env.example` |
+
+### 3. Запуск PostgreSQL (Docker)
+
+Если PostgreSQL не установлен локально:
 
 ```bash
-# unit tests
-$ bun run test
-
-# e2e tests
-$ bun run test:e2e
-
-# test coverage
-$ bun run test:cov
+docker compose -f docker-compose.dev.yml up -d
 ```
 
-## Deployment
+Проверка: `docker compose -f docker-compose.dev.yml ps` — сервис `postgres` должен быть в состоянии `running`.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### 4. Запуск приложения
 
 ```bash
-$ bun install -g @nestjs/mau
-$ mau deploy
+# Режим разработки (watch)
+bun run start:dev
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+В режиме разработки:
 
-## Resources
+- Включена синхронизация схемы TypeORM с БД (`synchronize: true`)
+- При первом запуске с пустой БД выполняется сидер с тестовыми данными
+- REST API: **http://localhost:4000/api**
+- Swagger: **http://localhost:4000/api-docs**
+- gRPC: **localhost:4001**
 
-Check out a few resources that may come in handy when working with NestJS:
+---
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+## Скрипты
 
-## Support
+| Команда | Описание |
+|--------|----------|
+| `bun run start` | Запуск без watch |
+| `bun run start:dev` | Запуск в режиме разработки (watch) |
+| `bun run start:debug` | Запуск с отладчиком |
+| `bun run start:prod` | Запуск собранного приложения (`bun dist/main`) |
+| `bun run build` | Сборка в `dist/` |
+| `bun run lint` | ESLint с автоисправлением |
+| `bun run format` | Prettier по `src` и `test` |
+| `bun run test` | Unit-тесты |
+| `bun run test:e2e` | E2E-тесты |
+| `bun run test:cov` | Покрытие тестами |
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+### Миграции (TypeORM)
 
-## Stay in touch
+Миграции используются в staging/production. В development по умолчанию используется `synchronize: true`.
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+```bash
+# Создать миграцию по изменениям сущностей
+bun run migration:generate -- src/database/migrations/MigrationName
 
-## License
+# Применить миграции
+bun run migration:run
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+# Откатить последнюю миграцию
+bun run migration:revert
+
+# Список миграций
+bun run migration:show
+```
+
+---
+
+## Сидер
+
+В режиме `NODE_ENV=development` или при `RUN_SEED=true` при старте приложения выполняется сидер: если таблицы проектов пустые, создаются тестовые теги, проекты и релизы. Для принудительного сида можно запустить с `RUN_SEED=true`.
+
+---
+
+## API
+
+### REST
+
+- Базовый префикс: `/api`
+- Документация: **GET** `/api-docs` (Swagger UI)
+
+Примеры эндпоинтов:
+
+- `GET/POST /api/projects`, `GET/PATCH/DELETE /api/projects/:id`
+- `GET/POST /api/releases`, `GET/PATCH/DELETE /api/releases/:id`
+- `GET/POST /api/tags`, `GET/PATCH/DELETE /api/tags/:id`
+
+Поддерживаются query-параметры для пагинации и фильтрации (см. Swagger).
+
+### gRPC
+
+- Proto-файл: `src/proto/projects.proto`
+- Пакет: `projects.v1`
+- В development включён gRPC Reflection для интроспекции (например, через `grpcurl`).
+
+Пример проверки списка сервисов (при запущенном приложении):
+
+```bash
+grpcurl -plaintext localhost:4001 list projects.v1
+```
+
+---
+
+## Docker
+
+Сборка образа приложения:
+
+```bash
+docker build -t projects-microservice .
+```
+
+Для полного стека (приложение + PostgreSQL) используйте `docker-compose.yml` в корне репозитория (если настроен).
+
+---
+
+## Структура проекта
+
+```
+src/
+├── main.ts                 # Точка входа, HTTP + gRPC + Swagger
+├── app.module.ts
+├── config/                 # Конфигурация (env, app, database)
+├── database/               # TypeORM, миграции, сидер
+├── common/                 # Фильтры, пагинация, утилиты
+├── projects/               # Модуль проектов (REST, gRPC, сервис, репозиторий)
+├── releases/               # Модуль релизов
+├── tags/                   # Модуль тегов
+└── proto/
+    └── projects.proto      # gRPC-контракт
+```
