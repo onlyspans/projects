@@ -1,8 +1,0 @@
-# This file is a TEMPLATE for Octopus Deploy Inline YAML
-# Copy this content into the "Inline YAML" field in Octopus Deploy step
-
-image:
-  tag: "#{Octopus.Release.Number}"
-
-imagePullSecrets:
-  - name: craas-onlyspans-private
