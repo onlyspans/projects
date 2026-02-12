@@ -1,0 +1,19 @@
+# This file is a TEMPLATE for Octopus Deploy Inline YAML
+# Copy this content into the "Inline YAML" field in Octopus Deploy step
+
+image:
+  tag: "#{Octopus.Release.Number}"
+
+imagePullSecrets:
+  - name: craas-onlyspans-private
+
+env:
+  POSTGRES_HOST: "#{Postgres.Host}"
+  POSTGRES_PORT: "#{Postgres.Port}"
+  POSTGRES_DB: "#{Postgres.Database}"
+  POSTGRES_USER: "#{Postgres.User}"
+  POSTGRES_PASSWORD: "#{Postgres.Password}"
+  NODE_ENV: "production"
+  PORT: "4000"
+  GRPC_PORT: "4001"
+  AUTO_MIGRATE: "true"
