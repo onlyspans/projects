@@ -21,6 +21,8 @@ export class ProjectsService {
       status: query.status,
       search: query.search,
       tagIds: query.tagIds,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
     });
   }
 

@@ -3,6 +3,17 @@ import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ProjectStatus } from '../entities/project.entity';
 
+export enum ProjectSortField {
+  NAME = 'name',
+  CREATED_AT = 'createdAt',
+  STATUS = 'status',
+}
+
+export enum SortOrder {
+  ASC = 'asc',
+  DESC = 'desc',
+}
+
 export class QueryProjectsDto {
   @ApiPropertyOptional({ description: 'Page number', default: 1, minimum: 1 })
   @IsOptional()
@@ -39,4 +50,14 @@ export class QueryProjectsDto {
   @IsArray()
   @IsUUID(undefined, { each: true })
   tagIds?: string[];
+
+  @ApiPropertyOptional({ enum: ProjectSortField, description: 'Sort by field', default: ProjectSortField.CREATED_AT })
+  @IsOptional()
+  @IsEnum(ProjectSortField)
+  sortBy?: ProjectSortField = ProjectSortField.CREATED_AT;
+
+  @ApiPropertyOptional({ enum: SortOrder, description: 'Sort order', default: SortOrder.DESC })
+  @IsOptional()
+  @IsEnum(SortOrder)
+  sortOrder?: SortOrder = SortOrder.DESC;
 }

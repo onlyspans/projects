@@ -13,6 +13,8 @@ export interface FindProjectsOptions {
   status?: ProjectStatus;
   search?: string;
   tagIds?: string[];
+  sortBy?: 'name' | 'createdAt' | 'status';
+  sortOrder?: 'asc' | 'desc';
 }
 
 @Injectable()
@@ -28,7 +30,16 @@ export class ProjectsRepository {
    * Find all projects with pagination and filtering
    */
   async findAll(options: FindProjectsOptions = {}): Promise<PaginatedResponse<Project>> {
-    const { page = 1, pageSize = 20, ownerId, status, search, tagIds } = options;
+    const {
+      page = 1,
+      pageSize = 20,
+      ownerId,
+      status,
+      search,
+      tagIds,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = options;
 
     const { skip, take } = calculatePagination(page, pageSize);
 
@@ -56,10 +67,13 @@ export class ProjectsRepository {
       queryBuilder.andWhere('tags.id IN (:...tagIds)', { tagIds });
     }
 
+    const orderDirection = sortOrder.toUpperCase() as 'ASC' | 'DESC';
+    const orderColumn = `project.${sortBy}`;
+
     const [items, total] = await queryBuilder
       .skip(skip)
       .take(take)
-      .orderBy('project.createdAt', 'DESC')
+      .orderBy(orderColumn, orderDirection)
       .getManyAndCount();
 
     const totalPages = calculateTotalPages(total, take);
