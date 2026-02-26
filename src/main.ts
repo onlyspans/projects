@@ -5,16 +5,20 @@ import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ReflectionService } from '@grpc/reflection';
 import { join } from 'path';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { ConfigService } from '@config/config.service';
 import { HttpExceptionFilter } from '@common/filters/http-exception.filter';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const configService = app.get(ConfigService);
 
   app.setGlobalPrefix('api');
   app.enableCors(configService.app.cors);
+
+  // Serve uploaded files from storage/ (project root). TODO: replace with S3 public URLs when S3 is added.
+  app.useStaticAssets(join(process.cwd(), 'storage'), { prefix: '/api/uploads' });
 
   app.useGlobalPipes(
     new ValidationPipe({

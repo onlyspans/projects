@@ -20,6 +20,7 @@
       "@projects/*": ["src/projects/*"],
       "@proto/*": ["src/proto/*"],
       "@releases/*": ["src/releases/*"],
+      "@storage/*": ["src/storage/*"],
       "@tags/*": ["src/tags/*"]
     },
     "incremental": true,
