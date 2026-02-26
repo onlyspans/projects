@@ -1,10 +1,13 @@
 # Projects Microservice
 
-Микросервис управления проектами и релизами в составе **Developer Platform (OnlySpans)**. Входит в конфигурационный слой платформы и отвечает за хранение метаданных проектов, версионирование релизов и координацию с сервисами доставки.
+Микросервис управления проектами и релизами в составе **Developer Platform (OnlySpans)**. Входит в конфигурационный слой
+платформы и отвечает за хранение метаданных проектов, версионирование релизов и координацию с сервисами доставки.
 
 ## Описание
 
-**Projects** — центральный сервис для работы с проектами разработки: CRUD проектов и релизов, тегирование, жизненный цикл (development → testing → staging → production) и передача структуры релиза в **Snapper** для создания снапшотов и доставки.
+**Projects** — центральный сервис для работы с проектами разработки: CRUD проектов и релизов, тегирование, жизненный
+цикл (development → testing → staging → production) и передача структуры релиза в **Snapper** для создания снапшотов и
+доставки.
 
 ### Роль в архитектуре
 
@@ -15,17 +18,18 @@ targets-plane → projects → processes / variables / assets
 ```
 
 - **REST API** — для фронтенда: управление проектами, релизами и тегами через HTTP/JSON.
-- **gRPC API** — для микросервисов: типобезопасное взаимодействие (targets-plane, snapper и др.), получение структуры релиза, обновление статусов.
+- **gRPC API** — для микросервисов: типобезопасное взаимодействие (targets-plane, snapper и др.), получение структуры
+  релиза.
 - В потоке **создания релиза**: валидация конфигурации и передача структуры релиза в Snapper после создания снапшота.
 - В потоке **доставки релиза**: хранение и обновление метаданных проектов и релизов, координация с processes.
 
 ### Основные сущности
 
-| Сущность   | Описание |
-|-----------|----------|
-| **Project** | Проект: название, slug (уникальный), imageUrl, emoji, статус (active/archived/suspended), владелец, стадии жизненного цикла, теги, произвольные metadata. Связан с релизами и тегами. Иконку можно загрузить через S3. |
-| **Release** | Релиз версии проекта: semver, снапшот из Snapper, статус (draft → created → scheduled → delivering → delivered/deployed/failed/rolled_back/cancelled), changelog, notes, структура конфигурации (processes, variables, assets) для доставки. |
-| **Tag**     | Тег для категоризации проектов: имя, описание, цвет (hex). Связь многие-ко-многим с проектами. |
+| Сущность    | Описание                                                                                                                                                                                                                  |
+|-------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Project** | Проект: название, slug (уникальный), imageUrl, emoji, статус (active/archived/suspended), владелец, стадии жизненного цикла, теги, произвольные metadata. Связан с релизами и тегами. Иконку можно загрузить через S3.    |
+| **Release** | Релиз версии проекта: semver, снапшот из Snapper, changelog, notes, структура конфигурации (processes, variables, assets) для доставки. Статус и продвижение по стадиям (dev → prod) ведёт сервис ответсвенный за деплой. |
+| **Tag**     | Тег для категоризации проектов: имя, описание, цвет (hex). Связь многие-ко-многим с проектами.                                                                                                                            |
 
 ### Стек
 
@@ -36,7 +40,8 @@ targets-plane → projects → processes / variables / assets
 - **Хранилище файлов:** S3-совместимое (Yandex Object Storage) — иконки проектов
 - **Валидация:** class-validator, class-transformer
 
-Подробные требования и описание API — в [.agents/guide.md](.agents/guide.md). Спецификация и обсуждение в репозитории [onlyspans/issues](https://github.com/onlyspans/issues) (issues по projects).
+Подробные требования и описание API — в [.agents/guide.md](.agents/guide.md). Спецификация и обсуждение в
+репозитории [onlyspans/issues](https://github.com/onlyspans/issues) (issues по projects).
 
 ---
 
@@ -65,23 +70,23 @@ cp .env.example .env
 
 Основные переменные (значения по умолчанию из `.env.example`):
 
-| Переменная        | Описание              | По умолчанию   |
-|-------------------|-----------------------|----------------|
-| `NODE_ENV`        | Окружение             | `development`  |
-| `PORT`            | Порт HTTP API         | `4000`         |
-| `GRPC_PORT`       | Порт gRPC             | `4001`         |
-| `POSTGRES_HOST`   | Хост PostgreSQL       | `localhost`   |
-| `POSTGRES_PORT`   | Порт PostgreSQL       | `5432`         |
-| `POSTGRES_USER`   | Пользователь БД       | `postgres`     |
-| `POSTGRES_PASSWORD` | Пароль БД          | `postgres`     |
-| `POSTGRES_DB`     | Имя базы              | `projects_db`  |
-| `AUTO_MIGRATE`    | Запуск миграций при старте | `false`  |
-| `CORS_ORIGIN`     | Разрешённые origins для CORS | см. `.env.example` |
-| `S3_BUCKET`       | Имя бакета S3 (обязательно для загрузки иконок) | — |
-| `S3_ACCESS_KEY_ID` | Ключ доступа S3     | — |
-| `S3_SECRET_ACCESS_KEY` | Секретный ключ S3 | — |
-| `S3_ENDPOINT`     | (опц.) Endpoint S3   | `https://storage.yandexcloud.net` |
-| `S3_REGION`       | (опц.) Регион        | `ru-central1` |
+| Переменная             | Описание                                        | По умолчанию                      |
+|------------------------|-------------------------------------------------|-----------------------------------|
+| `NODE_ENV`             | Окружение                                       | `development`                     |
+| `PORT`                 | Порт HTTP API                                   | `4000`                            |
+| `GRPC_PORT`            | Порт gRPC                                       | `4001`                            |
+| `POSTGRES_HOST`        | Хост PostgreSQL                                 | `localhost`                       |
+| `POSTGRES_PORT`        | Порт PostgreSQL                                 | `5432`                            |
+| `POSTGRES_USER`        | Пользователь БД                                 | `postgres`                        |
+| `POSTGRES_PASSWORD`    | Пароль БД                                       | `postgres`                        |
+| `POSTGRES_DB`          | Имя базы                                        | `projects_db`                     |
+| `AUTO_MIGRATE`         | Запуск миграций при старте                      | `false`                           |
+| `CORS_ORIGIN`          | Разрешённые origins для CORS                    | см. `.env.example`                |
+| `S3_BUCKET`            | Имя бакета S3 (обязательно для загрузки иконок) | —                                 |
+| `S3_ACCESS_KEY_ID`     | Ключ доступа S3                                 | —                                 |
+| `S3_SECRET_ACCESS_KEY` | Секретный ключ S3                               | —                                 |
+| `S3_ENDPOINT`          | (опц.) Endpoint S3                              | `https://storage.yandexcloud.net` |
+| `S3_REGION`            | (опц.) Регион                                   | `ru-central1`                     |
 
 Для загрузки иконок проектов (`POST /api/projects/:id/icon`) нужны переменные S3; без них эндпоинт вернёт ошибку.
 
@@ -114,18 +119,18 @@ bun run start:dev
 
 ## Скрипты
 
-| Команда | Описание |
-|--------|----------|
-| `bun run start` | Запуск без watch |
-| `bun run start:dev` | Запуск в режиме разработки (watch) |
-| `bun run start:debug` | Запуск с отладчиком |
-| `bun run start:prod` | Запуск собранного приложения (`bun dist/main`) |
-| `bun run build` | Сборка в `dist/` |
-| `bun run lint` | ESLint с автоисправлением |
-| `bun run format` | Prettier по `src` и `test` |
-| `bun run test` | Unit-тесты |
-| `bun run test:e2e` | E2E-тесты |
-| `bun run test:cov` | Покрытие тестами |
+| Команда               | Описание                                       |
+|-----------------------|------------------------------------------------|
+| `bun run start`       | Запуск без watch                               |
+| `bun run start:dev`   | Запуск в режиме разработки (watch)             |
+| `bun run start:debug` | Запуск с отладчиком                            |
+| `bun run start:prod`  | Запуск собранного приложения (`bun dist/main`) |
+| `bun run build`       | Сборка в `dist/`                               |
+| `bun run lint`        | ESLint с автоисправлением                      |
+| `bun run format`      | Prettier по `src` и `test`                     |
+| `bun run test`        | Unit-тесты                                     |
+| `bun run test:e2e`    | E2E-тесты                                      |
+| `bun run test:cov`    | Покрытие тестами                               |
 
 ### Миграции (TypeORM)
 
@@ -149,7 +154,8 @@ bun run migration:show
 
 ## Сидер
 
-В режиме `NODE_ENV=development` или при `RUN_SEED=true` при старте приложения выполняется сидер: если таблицы проектов пустые, создаются тестовые теги, проекты и релизы. Для принудительного сида можно запустить с `RUN_SEED=true`.
+В режиме `NODE_ENV=development` или при `RUN_SEED=true` при старте приложения выполняется сидер: если таблицы проектов
+пустые, создаются тестовые теги, проекты и релизы. Для принудительного сида можно запустить с `RUN_SEED=true`.
 
 ---
 
@@ -162,11 +168,13 @@ bun run migration:show
 
 Примеры эндпоинтов:
 
-- **Projects:** `GET/POST /api/projects`, `GET /api/projects/by-slug/:slug`, `GET/PATCH/DELETE /api/projects/:id`, `POST /api/projects/:id/icon` (загрузка иконки, multipart/form-data, поле `file`, PNG/JPEG/GIF/WebP до 2 MB)
+- **Projects:** `GET/POST /api/projects`, `GET /api/projects/by-slug/:slug`, `GET/PATCH/DELETE /api/projects/:id`,
+  `POST /api/projects/:id/icon` (загрузка иконки, multipart/form-data, поле `file`, PNG/JPEG/GIF/WebP до 2 MB)
 - **Releases:** `GET/POST /api/releases`, `GET/PATCH/DELETE /api/releases/:id`
 - **Tags:** `GET/POST /api/tags`, `GET/PATCH/DELETE /api/tags/:id`
 
-Поддерживаются query-параметры для пагинации и фильтрации (в т.ч. поиск по name, slug, description). Подробнее — в Swagger.
+Поддерживаются query-параметры для пагинации и фильтрации (в т.ч. поиск по name, slug, description). Подробнее — в
+Swagger.
 
 ### gRPC
 
