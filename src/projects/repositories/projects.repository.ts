@@ -176,4 +176,28 @@ export class ProjectsRepository {
       project.tags = [];
     }
   }
+
+  /**
+   * Set tags relation for a project (updates junction table)
+   */
+  async setProjectTags(projectId: string, tagIds: string[]): Promise<void> {
+    const tags =
+      tagIds && tagIds.length > 0
+        ? await this.tagRepository.find({
+            where: { id: In(tagIds) },
+          })
+        : [];
+
+    const existingTags = await this.projectRepository
+      .createQueryBuilder()
+      .relation(Project, 'tags')
+      .of(projectId)
+      .loadMany<Tag>();
+
+    await this.projectRepository
+      .createQueryBuilder()
+      .relation(Project, 'tags')
+      .of(projectId)
+      .addAndRemove(tags, existingTags);
+  }
 }

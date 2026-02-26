@@ -59,8 +59,7 @@ export class ProjectsService {
 
     // Load tags if provided
     if (createProjectDto.tagIds && createProjectDto.tagIds.length > 0) {
-      await this.projectsRepository.loadTags(project, createProjectDto.tagIds);
-      await this.projectsRepository.update(project.id, { tags: project.tags });
+      await this.projectsRepository.setProjectTags(project.id, createProjectDto.tagIds);
     }
 
     return this.findOne(project.id);
@@ -93,8 +92,7 @@ export class ProjectsService {
 
     // Update tags if provided
     if (updateProjectDto.tagIds !== undefined) {
-      await this.projectsRepository.loadTags(project, updateProjectDto.tagIds);
-      await this.projectsRepository.update(id, { tags: project.tags });
+      await this.projectsRepository.setProjectTags(id, updateProjectDto.tagIds);
     }
 
     return this.findOne(id);

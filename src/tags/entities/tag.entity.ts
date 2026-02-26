@@ -1,4 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToMany } from 'typeorm';
+import { Exclude } from 'class-transformer';
 import { Project } from '@projects/entities/project.entity';
 
 @Entity('tags')
@@ -16,6 +17,7 @@ export class Tag {
   color: string | null;
 
   @ManyToMany(() => Project, (project) => project.tags)
+  @Exclude()
   projects: Project[];
 
   @CreateDateColumn({ name: 'created_at' })
