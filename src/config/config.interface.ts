@@ -19,7 +19,17 @@ export interface DatabaseConfig {
   autoMigrate: boolean;
 }
 
+export interface StorageConfig {
+  endpoint: string;
+  region: string;
+  bucket: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+  publicUrlBase: string;
+}
+
 export interface AppConfig {
   app: ApplicationConfig;
   database: DatabaseConfig;
+  storage: StorageConfig;
 }

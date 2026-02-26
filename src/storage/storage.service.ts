@@ -1,41 +1,34 @@
 import { Injectable } from '@nestjs/common';
-import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { randomUUID } from 'crypto';
-import { join } from 'path';
-import {
-  STORAGE_DIR,
-  PROJECT_ICONS_DIR,
-  UPLOADS_PREFIX,
-  PROJECT_ICON_MIME_TYPES,
-  PROJECT_ICON_MAX_SIZE_BYTES,
-} from './storage.constants';
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { ConfigService } from '@config/config.service';
+import { PROJECT_ICONS_DIR, PROJECT_ICON_MIME_TYPES, PROJECT_ICON_MAX_SIZE_BYTES } from './storage.constants';
 
 export interface SaveProjectIconResult {
-  /** Relative URL to use as project.imageUrl (e.g. /api/uploads/project-icons/xxx.png). */
+  /** Absolute URL to use as project.imageUrl. */
   publicUrl: string;
-  /** Full filesystem path of the saved file. */
+  /** S3 object key. */
   filePath: string;
 }
 
-/**
- * Handles file storage for uploads.
- * Currently saves files locally in project root / storage.
- *
- * TODO: Replace local filesystem with S3 (or compatible) object storage:
- * - Add S3 client (e.g. @aws-sdk/client-s3), config (bucket, region, credentials).
- * - Implement saveProjectIcon to upload to S3 and return public URL (or signed URL).
- * - Optionally keep local storage as fallback for development via config.
- * - Remove or refactor ensureDir and local writeFileSync when S3 is in place.
- */
 @Injectable()
 export class StorageService {
-  private readonly projectIconsPath = join(STORAGE_DIR, PROJECT_ICONS_DIR);
+  private readonly s3Client: S3Client;
 
-  /**
-   * Saves a project icon file to local storage and returns the public URL.
-   * Validates MIME type and file size before saving.
-   */
-  async saveProjectIcon(buffer: Buffer, mimeType: string, originalFilename?: string): Promise<SaveProjectIconResult> {
+  constructor(private readonly configService: ConfigService) {
+    const storage = this.configService.storage;
+    this.s3Client = new S3Client({
+      region: storage.region,
+      endpoint: storage.endpoint,
+      credentials: {
+        accessKeyId: storage.accessKeyId,
+        secretAccessKey: storage.secretAccessKey,
+      },
+      forcePathStyle: true,
+    });
+  }
+
+  async saveProjectIcon(buffer: Buffer, mimeType: string, _originalFilename?: string): Promise<SaveProjectIconResult> {
     if (!PROJECT_ICON_MIME_TYPES.includes(mimeType as (typeof PROJECT_ICON_MIME_TYPES)[number])) {
       throw new Error(`Invalid file type. Allowed: ${PROJECT_ICON_MIME_TYPES.join(', ')}`);
     }
@@ -45,17 +38,20 @@ export class StorageService {
 
     const ext = this.getExtensionFromMime(mimeType);
     const filename = `${randomUUID()}${ext}`;
-    this.ensureDir(this.projectIconsPath);
-    const filePath = join(this.projectIconsPath, filename);
-    writeFileSync(filePath, buffer);
-    const publicUrl = `${UPLOADS_PREFIX}/${PROJECT_ICONS_DIR}/${filename}`;
-    return { publicUrl, filePath };
-  }
+    const key = `${PROJECT_ICONS_DIR}/${filename}`;
+    const storage = this.configService.storage;
 
-  private ensureDir(dir: string): void {
-    if (!existsSync(dir)) {
-      mkdirSync(dir, { recursive: true });
-    }
+    await this.s3Client.send(
+      new PutObjectCommand({
+        Bucket: storage.bucket,
+        Key: key,
+        Body: buffer,
+        ContentType: mimeType,
+      }),
+    );
+
+    const publicUrl = `${storage.publicUrlBase.replace(/\/$/, '')}/${key}`;
+    return { publicUrl, filePath: key };
   }
 
   private getExtensionFromMime(mime: string): string {

@@ -17,9 +17,6 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   app.enableCors(configService.app.cors);
 
-  // Serve uploaded files from storage/ (project root). TODO: replace with S3 public URLs when S3 is added.
-  app.useStaticAssets(join(process.cwd(), 'storage'), { prefix: '/api/uploads' });
-
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

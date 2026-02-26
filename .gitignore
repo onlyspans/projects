@@ -48,9 +48,6 @@ bun-error.log*
 .temp
 .tmp
 
-# Local uploads
-/storage
-
 # Runtime data
 pids
 *.pid
