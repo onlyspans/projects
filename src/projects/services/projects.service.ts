@@ -47,6 +47,17 @@ export class ProjectsService {
   }
 
   /**
+   * Get project by slug
+   */
+  async findBySlug(slug: string): Promise<Project> {
+    const project = await this.projectsRepository.findBySlug(slug);
+    if (!project) {
+      throw new NotFoundException(`Project with slug "${slug}" not found`);
+    }
+    return project;
+  }
+
+  /**
    * Create a new project
    */
   async create(createProjectDto: CreateProjectDto): Promise<Project> {

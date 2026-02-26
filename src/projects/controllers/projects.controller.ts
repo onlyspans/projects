@@ -44,6 +44,15 @@ export class ProjectsController {
     return this.projectsService.findAll(query);
   }
 
+  @Get('by-slug/:slug')
+  @ApiOperation({ summary: 'Get project by slug' })
+  @ApiParam({ name: 'slug', description: 'Project slug' })
+  @ApiResponse({ status: 200, description: 'Project found', type: Object })
+  @ApiResponse({ status: 404, description: 'Project not found' })
+  async findBySlug(@Param('slug') slug: string): Promise<Project> {
+    return this.projectsService.findBySlug(slug);
+  }
+
   @Post(':id/icon')
   @UseInterceptors(FileInterceptor('file'))
   @ApiOperation({ summary: 'Upload project icon' })
