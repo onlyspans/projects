@@ -23,7 +23,7 @@ targets-plane → projects → processes / variables / assets
 
 | Сущность   | Описание |
 |-----------|----------|
-| **Project** | Проект: название, slug, статус (active/archived/suspended), владелец, стадии жизненного цикла, теги, произвольные metadata. Связан с релизами и тегами. |
+| **Project** | Проект: название, slug (уникальный), imageUrl, emoji, статус (active/archived/suspended), владелец, стадии жизненного цикла, теги, произвольные metadata. Связан с релизами и тегами. Иконку можно загрузить через S3. |
 | **Release** | Релиз версии проекта: semver, снапшот из Snapper, статус (draft → created → scheduled → delivering → delivered/deployed/failed/rolled_back/cancelled), changelog, notes, структура конфигурации (processes, variables, assets) для доставки. |
 | **Tag**     | Тег для категоризации проектов: имя, описание, цвет (hex). Связь многие-ко-многим с проектами. |
 
@@ -33,6 +33,7 @@ targets-plane → projects → processes / variables / assets
 - **Framework:** [NestJS](https://nestjs.com) 11
 - **ORM:** TypeORM, PostgreSQL
 - **API:** REST (Express), gRPC (Protocol Buffers), [Swagger](https://swagger.io) (OpenAPI)
+- **Хранилище файлов:** S3-совместимое (Yandex Object Storage) — иконки проектов
 - **Валидация:** class-validator, class-transformer
 
 Подробные требования и описание API — в [.agents/guide.md](.agents/guide.md). Спецификация и обсуждение в репозитории [onlyspans/issues](https://github.com/onlyspans/issues) (issues по projects).
@@ -76,6 +77,13 @@ cp .env.example .env
 | `POSTGRES_DB`     | Имя базы              | `projects_db`  |
 | `AUTO_MIGRATE`    | Запуск миграций при старте | `false`  |
 | `CORS_ORIGIN`     | Разрешённые origins для CORS | см. `.env.example` |
+| `S3_BUCKET`       | Имя бакета S3 (обязательно для загрузки иконок) | — |
+| `S3_ACCESS_KEY_ID` | Ключ доступа S3     | — |
+| `S3_SECRET_ACCESS_KEY` | Секретный ключ S3 | — |
+| `S3_ENDPOINT`     | (опц.) Endpoint S3   | `https://storage.yandexcloud.net` |
+| `S3_REGION`       | (опц.) Регион        | `ru-central1` |
+
+Для загрузки иконок проектов (`POST /api/projects/:id/icon`) нужны переменные S3; без них эндпоинт вернёт ошибку.
 
 ### 3. Запуск PostgreSQL (Docker)
 
@@ -154,11 +162,11 @@ bun run migration:show
 
 Примеры эндпоинтов:
 
-- `GET/POST /api/projects`, `GET/PATCH/DELETE /api/projects/:id`
-- `GET/POST /api/releases`, `GET/PATCH/DELETE /api/releases/:id`
-- `GET/POST /api/tags`, `GET/PATCH/DELETE /api/tags/:id`
+- **Projects:** `GET/POST /api/projects`, `GET /api/projects/by-slug/:slug`, `GET/PATCH/DELETE /api/projects/:id`, `POST /api/projects/:id/icon` (загрузка иконки, multipart/form-data, поле `file`, PNG/JPEG/GIF/WebP до 2 MB)
+- **Releases:** `GET/POST /api/releases`, `GET/PATCH/DELETE /api/releases/:id`
+- **Tags:** `GET/POST /api/tags`, `GET/PATCH/DELETE /api/tags/:id`
 
-Поддерживаются query-параметры для пагинации и фильтрации (см. Swagger).
+Поддерживаются query-параметры для пагинации и фильтрации (в т.ч. поиск по name, slug, description). Подробнее — в Swagger.
 
 ### gRPC
 
@@ -192,12 +200,13 @@ docker build -t projects-microservice .
 src/
 ├── main.ts                 # Точка входа, HTTP + gRPC + Swagger
 ├── app.module.ts
-├── config/                 # Конфигурация (env, app, database)
+├── config/                 # Конфигурация (env, app, database, storage)
 ├── database/               # TypeORM, миграции, сидер
 ├── common/                 # Фильтры, пагинация, утилиты
 ├── projects/               # Модуль проектов (REST, gRPC, сервис, репозиторий)
 ├── releases/               # Модуль релизов
 ├── tags/                   # Модуль тегов
+├── storage/                # Загрузка файлов в S3 (иконки проектов)
 └── proto/
     └── projects.proto      # gRPC-контракт
 ```
