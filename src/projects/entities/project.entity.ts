@@ -43,6 +43,12 @@ export class Project {
   @Column({ type: 'text', nullable: true })
   description: string | null;
 
+  @Column({ type: 'varchar', length: 2048, name: 'image_url', nullable: true })
+  imageUrl: string | null;
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  emoji: string | null;
+
   @Column({
     type: 'varchar',
     length: 20,

@@ -51,6 +51,8 @@ export class ProjectsService {
       name: createProjectDto.name,
       slug: createProjectDto.slug,
       description: createProjectDto.description,
+      imageUrl: createProjectDto.imageUrl ?? null,
+      emoji: createProjectDto.emoji ?? null,
       status: createProjectDto.status || ProjectStatus.ACTIVE,
       ownerId: createProjectDto.ownerId,
       lifecycleStages: createProjectDto.lifecycleStages || [],
@@ -83,6 +85,8 @@ export class ProjectsService {
     if (updateProjectDto.name !== undefined) updateData.name = updateProjectDto.name;
     if (updateProjectDto.slug !== undefined) updateData.slug = updateProjectDto.slug;
     if (updateProjectDto.description !== undefined) updateData.description = updateProjectDto.description;
+    if (updateProjectDto.imageUrl !== undefined) updateData.imageUrl = updateProjectDto.imageUrl ?? null;
+    if (updateProjectDto.emoji !== undefined) updateData.emoji = updateProjectDto.emoji ?? null;
     if (updateProjectDto.status !== undefined) updateData.status = updateProjectDto.status;
     if (updateProjectDto.ownerId !== undefined) updateData.ownerId = updateProjectDto.ownerId;
     if (updateProjectDto.lifecycleStages !== undefined) updateData.lifecycleStages = updateProjectDto.lifecycleStages;
