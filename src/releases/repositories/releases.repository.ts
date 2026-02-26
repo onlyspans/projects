@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere } from 'typeorm';
-import { Release, ReleaseStatus } from '../entities/release.entity';
+import { Release } from '../entities/release.entity';
 import { Project } from '@projects/entities/project.entity';
 import { PaginatedResponse } from '@common/interfaces/paginated-response.interface';
 import { calculatePagination, calculateTotalPages } from '@common/utils/pagination.util';
@@ -10,7 +10,6 @@ export interface FindReleasesOptions {
   projectId: string;
   page?: number;
   pageSize?: number;
-  status?: ReleaseStatus;
   version?: string;
 }
 
@@ -27,7 +26,7 @@ export class ReleasesRepository {
    * Find all releases for a project with pagination and filtering
    */
   async findAll(options: FindReleasesOptions): Promise<PaginatedResponse<Release>> {
-    const { projectId, page = 1, pageSize = 20, status, version } = options;
+    const { projectId, page = 1, pageSize = 20, version } = options;
 
     const { skip, take } = calculatePagination(page, pageSize);
 
@@ -36,10 +35,6 @@ export class ReleasesRepository {
       .leftJoinAndSelect('release.project', 'project')
       .where('release.projectId = :projectId', { projectId })
       .andWhere('release.deletedAt IS NULL');
-
-    if (status) {
-      queryBuilder.andWhere('release.status = :status', { status });
-    }
 
     if (version) {
       queryBuilder.andWhere('release.version ILIKE :version', {

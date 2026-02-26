@@ -5,7 +5,6 @@ import { Tag } from '@tags/entities/tag.entity';
 import { Project } from '@projects/entities/project.entity';
 import { Release } from '@releases/entities/release.entity';
 import { ProjectStatus, LifecycleStage } from '@projects/entities/project.entity';
-import { ReleaseStatus } from '@releases/entities/release.entity';
 
 @Injectable()
 export class DatabaseSeeder implements OnApplicationBootstrap {
@@ -99,7 +98,6 @@ export class DatabaseSeeder implements OnApplicationBootstrap {
         projectId: project1.id,
         version: '1.0.0',
         snapshotId: null,
-        status: ReleaseStatus.DEPLOYED,
         changelog: 'Initial release',
         notes: null,
         structure: {},
@@ -109,7 +107,6 @@ export class DatabaseSeeder implements OnApplicationBootstrap {
         projectId: project1.id,
         version: '1.1.0',
         snapshotId: null,
-        status: ReleaseStatus.DRAFT,
         changelog: null,
         notes: 'WIP',
         structure: {},
@@ -119,7 +116,6 @@ export class DatabaseSeeder implements OnApplicationBootstrap {
         projectId: project2.id,
         version: '0.1.0',
         snapshotId: null,
-        status: ReleaseStatus.CREATED,
         changelog: 'Alpha release',
         notes: null,
         structure: {},

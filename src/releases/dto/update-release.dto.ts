@@ -1,14 +1,8 @@
-import { IsString, IsOptional, IsEnum, IsUUID, IsObject } from 'class-validator';
+import { IsString, IsOptional, IsUUID, IsObject } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { ReleaseStatus } from '../entities/release.entity';
 import { ReleaseStructure } from '../interfaces/release-structure.interface';
 
 export class UpdateReleaseDto {
-  @ApiPropertyOptional({ enum: ReleaseStatus, description: 'Release status' })
-  @IsOptional()
-  @IsEnum(ReleaseStatus)
-  status?: ReleaseStatus;
-
   @ApiPropertyOptional({ description: 'Snapshot ID' })
   @IsOptional()
   @IsUUID()

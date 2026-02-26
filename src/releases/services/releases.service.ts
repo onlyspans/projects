@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { ReleasesRepository } from '../repositories/releases.repository';
 import { ProjectsService } from '@projects/services/projects.service';
-import { Release, ReleaseStatus } from '../entities/release.entity';
+import { Release } from '../entities/release.entity';
 import { CreateReleaseDto } from '../dto/create-release.dto';
 import { UpdateReleaseDto } from '../dto/update-release.dto';
 import { QueryReleasesDto } from '../dto/query-releases.dto';
@@ -29,7 +29,6 @@ export class ReleasesService {
       projectId,
       page: query.page,
       pageSize: query.pageSize,
-      status: query.status,
       version: query.version,
     });
   }
@@ -67,7 +66,6 @@ export class ReleasesService {
     const release = await this.releasesRepository.create({
       projectId,
       version: createReleaseDto.version,
-      status: ReleaseStatus.DRAFT,
       changelog: createReleaseDto.changelog,
       notes: createReleaseDto.notes,
       structure: createReleaseDto.structure || {},
@@ -84,7 +82,6 @@ export class ReleasesService {
     await this.findOne(id, projectId);
 
     const updateData: Partial<Release> = {};
-    if (updateReleaseDto.status !== undefined) updateData.status = updateReleaseDto.status;
     if (updateReleaseDto.snapshotId !== undefined) updateData.snapshotId = updateReleaseDto.snapshotId;
     if (updateReleaseDto.changelog !== undefined) updateData.changelog = updateReleaseDto.changelog;
     if (updateReleaseDto.notes !== undefined) updateData.notes = updateReleaseDto.notes;
@@ -104,18 +101,8 @@ export class ReleasesService {
     await this.releasesRepository.update(id, {
       snapshotId,
       structure: structure as any,
-      status: ReleaseStatus.CREATED,
     });
 
-    return this.findOne(id);
-  }
-
-  /**
-   * Update release status
-   */
-  async updateStatus(id: string, status: ReleaseStatus): Promise<Release> {
-    await this.findOne(id); // Verify release exists
-    await this.releasesRepository.update(id, { status });
     return this.findOne(id);
   }
 

@@ -21,19 +21,6 @@ enum LifecycleStage {
   LIFECYCLE_STAGE_PRODUCTION = 4;
 }
 
-enum ReleaseStatus {
-  RELEASE_STATUS_UNSPECIFIED = 0;
-  RELEASE_STATUS_DRAFT = 1;
-  RELEASE_STATUS_CREATED = 2;
-  RELEASE_STATUS_SCHEDULED = 3;
-  RELEASE_STATUS_DELIVERING = 4;
-  RELEASE_STATUS_DELIVERED = 5;
-  RELEASE_STATUS_DEPLOYED = 6;
-  RELEASE_STATUS_FAILED = 7;
-  RELEASE_STATUS_ROLLED_BACK = 8;
-  RELEASE_STATUS_CANCELLED = 9;
-}
-
 // Messages
 message Project {
   string id = 1;
@@ -54,13 +41,12 @@ message Release {
   string project_id = 2;
   string version = 3;
   string snapshot_id = 4;
-  ReleaseStatus status = 5;
-  string changelog = 6;
-  string notes = 7;
-  ReleaseStructure structure = 8;
-  map<string, string> metadata = 9;
-  google.protobuf.Timestamp created_at = 10;
-  google.protobuf.Timestamp updated_at = 11;
+  string changelog = 5;
+  string notes = 6;
+  ReleaseStructure structure = 7;
+  map<string, string> metadata = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
 }
 
 message ReleaseStructure {
@@ -156,8 +142,7 @@ message ListReleasesRequest {
   string project_id = 1;
   int32 page = 2;
   int32 page_size = 3;
-  ReleaseStatus status = 4;
-  string version = 5;
+  string version = 4;
 }
 
 message ListReleasesResponse {
@@ -178,23 +163,17 @@ message CreateReleaseRequest {
 
 message UpdateReleaseRequest {
   string id = 1;
-  ReleaseStatus status = 2;
-  string snapshot_id = 3;
-  string changelog = 4;
-  string notes = 5;
-  ReleaseStructure structure = 6;
-  map<string, string> metadata = 7;
+  string snapshot_id = 2;
+  string changelog = 3;
+  string notes = 4;
+  ReleaseStructure structure = 5;
+  map<string, string> metadata = 6;
 }
 
 message UpdateReleaseStructureRequest {
   string id = 1;
   string snapshot_id = 2;
   ReleaseStructure structure = 3;
-}
-
-message UpdateReleaseStatusRequest {
-  string id = 1;
-  ReleaseStatus status = 2;
 }
 
 message DeleteReleaseRequest {
@@ -254,9 +233,6 @@ service ReleasesService {
   
   // Обновить структуру релиза (вызывается snapper)
   rpc UpdateReleaseStructure(UpdateReleaseStructureRequest) returns (Release);
-  
-  // Обновить статус релиза
-  rpc UpdateReleaseStatus(UpdateReleaseStatusRequest) returns (Release);
   
   // Удалить релиз
   rpc DeleteRelease(DeleteReleaseRequest) returns (google.protobuf.Empty);

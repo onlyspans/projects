@@ -1,7 +1,6 @@
-import { IsOptional, IsEnum, IsString, IsInt, Min, Max } from 'class-validator';
+import { IsOptional, IsString, IsInt, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { ReleaseStatus } from '../entities/release.entity';
 
 export class QueryReleasesDto {
   @ApiPropertyOptional({ description: 'Page number', default: 1, minimum: 1 })
@@ -18,11 +17,6 @@ export class QueryReleasesDto {
   @Min(1)
   @Max(100)
   pageSize?: number = 20;
-
-  @ApiPropertyOptional({ enum: ReleaseStatus, description: 'Filter by status' })
-  @IsOptional()
-  @IsEnum(ReleaseStatus)
-  status?: ReleaseStatus;
 
   @ApiPropertyOptional({ description: 'Search by version' })
   @IsOptional()
