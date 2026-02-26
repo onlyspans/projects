@@ -64,7 +64,9 @@ export class ProjectsRepository {
     }
 
     if (tagIds && tagIds.length > 0) {
-      queryBuilder.andWhere('tags.id IN (:...tagIds)', { tagIds });
+      queryBuilder.andWhere('project.id IN (SELECT project_id FROM project_tags WHERE tag_id IN (:...tagIds))', {
+        tagIds,
+      });
     }
 
     const orderDirection = sortOrder.toUpperCase() as 'ASC' | 'DESC';
