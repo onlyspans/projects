@@ -1,5 +1,5 @@
 import { IsOptional, IsEnum, IsString, IsUUID, IsArray, IsInt, Min, Max } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ProjectStatus } from '../entities/project.entity';
 
@@ -45,8 +45,9 @@ export class QueryProjectsDto {
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by tag IDs', type: [String] })
+  @ApiPropertyOptional({ description: 'Filter by tag IDs', type: [String], isArray: true })
   @IsOptional()
+  @Transform(({ value }) => (Array.isArray(value) ? value : value ? [value] : undefined))
   @IsArray()
   @IsUUID(undefined, { each: true })
   tagIds?: string[];
