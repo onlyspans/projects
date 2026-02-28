@@ -37,7 +37,7 @@ ingress:
   className: "nginx"
   annotations: {}
   hosts:
-    - host: api-staging.onlyspans.ru
+    - host: projects.onlyspans.ru
       paths:
         - path: /
           pathType: Prefix
