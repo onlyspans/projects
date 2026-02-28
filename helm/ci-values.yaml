@@ -1,0 +1,4 @@
+image:
+  tag: "${IMAGE_TAG}"
+imagePullSecrets:
+  - name: "${IMAGE_PULL_SECRET}"
