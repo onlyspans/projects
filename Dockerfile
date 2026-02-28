@@ -39,9 +39,9 @@ COPY --from=builder /app/src/proto ./dist/proto
 # Expose ports
 EXPOSE 3000 5000
 
-# Health check (optional - can be customized)
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:3000 || exit 1
+USER bun
 
-# Start the application
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost:3000/healthz || exit 1
+
 CMD ["bun", "run", "start:prod"]
