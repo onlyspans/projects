@@ -68,6 +68,12 @@ jobs:
         env:
           IMAGE_TAG: ${{ steps.version.outputs.version }}
           IMAGE_PULL_SECRET: ${{ vars.IMAGE_PULL_SECRET }}
+          PROJECTS_DATABASE_URL: ${{ secrets.PROJECTS_DATABASE_URL }}
+          PROJECTS_S3_BUCKET: ${{ secrets.PROJECTS_S3_BUCKET }}
+          PROJECTS_S3_ACCESS_KEY_ID: ${{ secrets.PROJECTS_S3_ACCESS_KEY_ID }}
+          PROJECTS_S3_SECRET_ACCESS_KEY: ${{ secrets.PROJECTS_S3_SECRET_ACCESS_KEY }}
+          PROJECTS_S3_ENDPOINT: ${{ vars.PROJECTS_S3_ENDPOINT }}
+          PROJECTS_S3_REGION: ${{ vars.PROJECTS_S3_REGION }}
         run: |
           envsubst < ./helm/ci-values.yaml | helm upgrade --install ${{ env.HELM_RELEASE }} ./helm \
             --namespace ${{ env.KUBE_NAMESPACE }} \

@@ -80,12 +80,22 @@ nodeSelector: {}
 tolerations: []
 affinity: {}
 
-# Plain-text env vars (non-sensitive)
-env: {}
+# Non-sensitive env vars
+env:
+  NODE_ENV: "production"
+  AUTO_MIGRATE: "true"
+  CORS_ORIGIN: "https://staging.onlyspans.ru"
 
-# Name of an existing Kubernetes Secret to load env vars from
-# The secret should contain sensitive values: DB credentials, S3 keys, etc.
-envFromSecret: ""
+# Sensitive secrets — injected into a Kubernetes Secret managed by this Helm release
+secrets:
+  databaseUrl: ""
+  s3Bucket: ""
+  s3AccessKeyId: ""
+  s3SecretAccessKey: ""
+  # Optional; defaults applied in app code if empty
+  s3Endpoint: ""
+  s3Region: ""
+  s3PublicUrlBase: ""
 
 vmServiceScrape:
   enabled: false

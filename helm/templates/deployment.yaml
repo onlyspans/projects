@@ -40,15 +40,17 @@ spec:
           containerPort: {{ .Values.service.grpc.port }}
           protocol: TCP
         env:
+        - name: PORT
+          value: {{ .Values.service.http.port | quote }}
+        - name: GRPC_PORT
+          value: {{ .Values.service.grpc.port | quote }}
         {{- range $key, $value := .Values.env }}
         - name: {{ $key }}
           value: {{ $value | quote }}
         {{- end }}
-        {{- if .Values.envFromSecret }}
         envFrom:
         - secretRef:
-            name: {{ .Values.envFromSecret }}
-        {{- end }}
+            name: {{ include "projects.fullname" . }}-env
         livenessProbe:
           {{- toYaml .Values.livenessProbe | nindent 12 }}
         readinessProbe:

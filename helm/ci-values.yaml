@@ -2,3 +2,10 @@ image:
   tag: "${IMAGE_TAG}"
 imagePullSecrets:
   - name: "${IMAGE_PULL_SECRET}"
+secrets:
+  databaseUrl: "${PROJECTS_DATABASE_URL}"
+  s3Bucket: "${PROJECTS_S3_BUCKET}"
+  s3AccessKeyId: "${PROJECTS_S3_ACCESS_KEY_ID}"
+  s3SecretAccessKey: "${PROJECTS_S3_SECRET_ACCESS_KEY}"
+  s3Endpoint: "${PROJECTS_S3_ENDPOINT}"
+  s3Region: "${PROJECTS_S3_REGION}"
