@@ -10,11 +10,7 @@ export interface ApplicationConfig {
 
 export interface DatabaseConfig {
   type: 'postgres';
-  host: string;
-  port: number;
-  username: string;
-  password: string;
-  database: string;
+  url: string;
   synchronize: boolean;
   autoMigrate: boolean;
 }

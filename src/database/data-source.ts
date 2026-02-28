@@ -12,11 +12,7 @@ const nodeEnv = getEnvOrDefault('NODE_ENV', 'development');
 
 export default new DataSource({
   type: 'postgres',
-  host: getEnvOrThrow('POSTGRES_HOST'),
-  port: parseInt(getEnvOrThrow('POSTGRES_PORT'), 10),
-  username: getEnvOrThrow('POSTGRES_USER'),
-  password: getEnvOrThrow('POSTGRES_PASSWORD'),
-  database: getEnvOrThrow('POSTGRES_DB'),
+  url: getEnvOrThrow('DATABASE_URL'),
   entities: [Project, Tag, Release],
   migrations: [join(__dirname, 'migrations', '*.ts')],
   synchronize: false,

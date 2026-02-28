@@ -70,23 +70,19 @@ cp .env.example .env
 
 Основные переменные (значения по умолчанию из `.env.example`):
 
-| Переменная             | Описание                                        | По умолчанию                      |
-|------------------------|-------------------------------------------------|-----------------------------------|
-| `NODE_ENV`             | Окружение                                       | `development`                     |
-| `PORT`                 | Порт HTTP API                                   | `4000`                            |
-| `GRPC_PORT`            | Порт gRPC                                       | `4001`                            |
-| `POSTGRES_HOST`        | Хост PostgreSQL                                 | `localhost`                       |
-| `POSTGRES_PORT`        | Порт PostgreSQL                                 | `5432`                            |
-| `POSTGRES_USER`        | Пользователь БД                                 | `postgres`                        |
-| `POSTGRES_PASSWORD`    | Пароль БД                                       | `postgres`                        |
-| `POSTGRES_DB`          | Имя базы                                        | `projects_db`                     |
-| `AUTO_MIGRATE`         | Запуск миграций при старте                      | `false`                           |
-| `CORS_ORIGIN`          | Разрешённые origins для CORS                    | см. `.env.example`                |
-| `S3_BUCKET`            | Имя бакета S3 (обязательно для загрузки иконок) | —                                 |
-| `S3_ACCESS_KEY_ID`     | Ключ доступа S3                                 | —                                 |
-| `S3_SECRET_ACCESS_KEY` | Секретный ключ S3                               | —                                 |
-| `S3_ENDPOINT`          | (опц.) Endpoint S3                              | `https://storage.yandexcloud.net` |
-| `S3_REGION`            | (опц.) Регион                                   | `ru-central1`                     |
+| Переменная             | Описание                                        | По умолчанию                                                |
+|------------------------|-------------------------------------------------|-------------------------------------------------------------|
+| `NODE_ENV`             | Окружение                                       | `development`                                               |
+| `PORT`                 | Порт HTTP API                                   | `4000`                                                      |
+| `GRPC_PORT`            | Порт gRPC                                       | `4001`                                                      |
+| `DATABASE_URL`         | DSN подключения к PostgreSQL                    | `postgresql://postgres:postgres@localhost:5432/projects_db` |
+| `AUTO_MIGRATE`         | Запуск миграций при старте                      | `false`                                                     |
+| `CORS_ORIGIN`          | Разрешённые origins для CORS                    | см. `.env.example`                                          |
+| `S3_BUCKET`            | Имя бакета S3 (обязательно для загрузки иконок) | —                                                           |
+| `S3_ACCESS_KEY_ID`     | Ключ доступа S3                                 | —                                                           |
+| `S3_SECRET_ACCESS_KEY` | Секретный ключ S3                               | —                                                           |
+| `S3_ENDPOINT`          | (опц.) Endpoint S3                              | `https://storage.yandexcloud.net`                           |
+| `S3_REGION`            | (опц.) Регион                                   | `ru-central1`                                               |
 
 Для загрузки иконок проектов (`POST /api/projects/:id/icon`) нужны переменные S3; без них эндпоинт вернёт ошибку.
 
@@ -198,7 +194,58 @@ grpcurl -plaintext localhost:4001 list projects.v1
 docker build -t projects-microservice .
 ```
 
-Для полного стека (приложение + PostgreSQL) используйте `docker-compose.yml` в корне репозитория (если настроен).
+Для полного стека (приложение + PostgreSQL) используйте `docker-compose.yml` в корне репозитория.
+
+---
+
+## Деплой (Kubernetes)
+
+Деплой в Kubernetes выполняется через Helm. CI/CD настроен в `.github/workflows/release.yaml` — при пуше в `main`
+собирается Docker-образ, пушится в registry и разворачивается через `helm upgrade --install`.
+
+### Helm chart
+
+```
+helm/
+├── Chart.yaml
+├── values.yaml          # Дефолтные значения (порты, ресурсы, проверки)
+├── ci-values.yaml       # CI-оверрайды (тег образа, секреты через envsubst)
+└── templates/
+    ├── deployment.yaml
+    ├── service.yaml     # HTTP (3000) + gRPC (5000)
+    ├── ingress.yaml
+    ├── secret.yaml      # K8s Secret с чувствительными переменными
+    ├── serviceaccount.yaml
+    └── vmservicescrape.yaml
+```
+
+### Kubernetes-пробы
+
+- **Liveness:** `GET /healthz` — всегда возвращает `200 OK`
+- **Readiness:** `GET /readyz` — проверяет подключение к БД, возвращает `503` если БД недоступна
+
+### Необходимые секреты и переменные в GitHub
+
+**Secrets** (`Settings → Secrets`):
+
+| Имя                            | Описание                                              |
+|--------------------------------|-------------------------------------------------------|
+| `DOCKER_REGISTRY_USERNAME`     | Логин в container registry                            |
+| `DOCKER_REGISTRY_TOKEN`        | Пароль / токен registry                               |
+| `KUBECONFIG`                   | kubeconfig в base64 (`base64 -w0 ~/.kube/config`)     |
+| `PROJECTS_DATABASE_URL`        | DSN PostgreSQL (`postgresql://user:pass@host/db`)     |
+| `PROJECTS_S3_ACCESS_KEY_ID`    | Ключ доступа S3                                       |
+| `PROJECTS_S3_SECRET_ACCESS_KEY`| Секретный ключ S3                                     |
+| `PROJECTS_S3_BUCKET`           | Имя бакета S3                                         |
+
+**Variables** (`Settings → Variables`):
+
+| Имя                    | Описание                                                    |
+|------------------------|-------------------------------------------------------------|
+| `REGISTRY`             | Адрес container registry                                    |
+| `IMAGE_PULL_SECRET`    | Имя imagePullSecret в кластере                              |
+| `PROJECTS_S3_ENDPOINT` | (опц.) Endpoint S3, по умолчанию Yandex Object Storage      |
+| `PROJECTS_S3_REGION`   | (опц.) Регион S3, по умолчанию `ru-central1`                |
 
 ---
 

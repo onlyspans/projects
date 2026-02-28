@@ -1,0 +1,104 @@
+replicaCount: 1
+
+image:
+  repository: onlyspans-private.registry.twcstorage.ru/projects
+  pullPolicy: IfNotPresent
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: "projects-sa"
+
+podAnnotations: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+
+service:
+  type: ClusterIP
+  http:
+    port: 3000
+  grpc:
+    port: 5000
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations: {}
+  hosts:
+    - host: api-staging.onlyspans.ru
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Non-sensitive env vars
+env:
+  NODE_ENV: "production"
+  AUTO_MIGRATE: "true"
+  CORS_ORIGIN: "https://staging.onlyspans.ru"
+
+# Sensitive secrets — injected into a Kubernetes Secret managed by this Helm release
+secrets:
+  databaseUrl: ""
+  s3Bucket: ""
+  s3AccessKeyId: ""
+  s3SecretAccessKey: ""
+  # Optional; defaults applied in app code if empty
+  s3Endpoint: ""
+  s3Region: ""
+  s3PublicUrlBase: ""
+
+vmServiceScrape:
+  enabled: false
+  interval: 15s
+  path: /metrics
+  port: metrics

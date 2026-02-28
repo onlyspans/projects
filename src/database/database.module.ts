@@ -20,11 +20,7 @@ import { DatabaseSeeder } from './seeds/database.seeder';
 
         return {
           type: 'postgres',
-          host: dbConfig.host,
-          port: dbConfig.port,
-          username: dbConfig.username,
-          password: dbConfig.password,
-          database: dbConfig.database,
+          url: dbConfig.url,
           entities: [Project, Tag, Release],
           synchronize: dbConfig.synchronize,
           logging: isDevelopment,
