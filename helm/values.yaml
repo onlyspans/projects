@@ -53,14 +53,14 @@ grpcIngress:
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-dns"
   hosts:
-    - host: projects.onlyspans.ru
+    - host: grpc.projects.onlyspans.ru
       paths:
         - path: /
           pathType: Prefix
   tls:
     - hosts:
-        - projects.onlyspans.ru
-      secretName: projects-tls
+        - grpc.projects.onlyspans.ru
+      secretName: grpc-projects-tls
 
 resources:
   limits:
