@@ -35,13 +35,32 @@ service:
 ingress:
   enabled: true
   className: "nginx"
-  annotations: {}
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
   hosts:
     - host: projects.onlyspans.ru
       paths:
         - path: /
           pathType: Prefix
-  tls: []
+  tls:
+    - hosts:
+        - projects.onlyspans.ru
+      secretName: projects-tls
+
+grpcIngress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: projects.onlyspans.ru
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - hosts:
+        - projects.onlyspans.ru
+      secretName: projects-tls
 
 resources:
   limits:
