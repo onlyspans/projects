@@ -103,7 +103,7 @@ affinity: {}
 env:
   NODE_ENV: "production"
   AUTO_MIGRATE: "true"
-  CORS_ORIGIN: "http://staging.onlyspans.ru,https://staging.onlyspans.ru,"
+  CORS_ORIGIN: "http://staging.onlyspans.ru,https://staging.onlyspans.ru"
 
 # Sensitive secrets — injected into a Kubernetes Secret managed by this Helm release
 secrets:
