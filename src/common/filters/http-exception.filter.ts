@@ -41,11 +41,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
             message: body,
           }
         : {
+            ...(body as Record<string, unknown>),
             statusCode: status,
             timestamp: new Date().toISOString(),
             path: request.url,
             message: messageFromHttpResponseBody(body as Record<string, unknown>),
-            ...body,
           };
 
     response.status(status).json(errorResponse);

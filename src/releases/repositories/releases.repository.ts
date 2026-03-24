@@ -130,7 +130,7 @@ export class ReleasesRepository {
   }
 
   async exists(id: string): Promise<boolean> {
-    const count = await this.db.release.count({ where: { id } });
+    const count = await this.db.release.count({ where: { id, deletedAt: null } });
     return count > 0;
   }
 
