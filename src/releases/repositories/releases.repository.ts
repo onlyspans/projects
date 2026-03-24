@@ -104,17 +104,20 @@ export class ReleasesRepository {
       metadata?: Prisma.InputJsonValue;
     },
   ): Promise<Release> {
-    const patch: Prisma.ReleaseUpdateInput = {};
+    const patch: Prisma.ReleaseUpdateManyMutationInput = {};
     if (data.snapshotId !== undefined) patch.snapshotId = data.snapshotId;
     if (data.changelog !== undefined) patch.changelog = data.changelog;
     if (data.notes !== undefined) patch.notes = data.notes;
     if (data.structure !== undefined) patch.structure = data.structure as Prisma.JsonObject;
     if (data.metadata !== undefined) patch.metadata = data.metadata as Prisma.JsonObject;
 
-    await this.db.release.update({
-      where: { id },
+    const result = await this.db.release.updateMany({
+      where: { id, deletedAt: null },
       data: patch,
     });
+    if (result.count === 0) {
+      throw new Error(`Release with ID ${id} not found`);
+    }
     const release = await this.findOne(id);
     if (!release) {
       throw new Error(`Release with ID ${id} not found after update`);
@@ -123,10 +126,13 @@ export class ReleasesRepository {
   }
 
   async softDelete(id: string): Promise<void> {
-    await this.db.release.update({
-      where: { id },
+    const result = await this.db.release.updateMany({
+      where: { id, deletedAt: null },
       data: { deletedAt: new Date() },
     });
+    if (result.count === 0) {
+      throw new Error(`Release with ID ${id} not found`);
+    }
   }
 
   async exists(id: string): Promise<boolean> {
