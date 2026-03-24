@@ -8,11 +8,13 @@ export interface ApplicationConfig {
   };
 }
 
+export type PrismaLogLevel = 'query' | 'info' | 'warn' | 'error';
+
 export interface DatabaseConfig {
   type: 'postgres';
   url: string;
-  synchronize: boolean;
-  autoMigrate: boolean;
+  logQueries: boolean;
+  logLevel: PrismaLogLevel;
 }
 
 export interface StorageConfig {

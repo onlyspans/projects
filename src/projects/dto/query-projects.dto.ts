@@ -1,7 +1,7 @@
 import { IsOptional, IsEnum, IsString, IsUUID, IsArray, IsInt, Min, Max } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { ProjectStatus } from '../entities/project.entity';
+import { ProjectStatus } from '../constants/project-status';
 
 export enum ProjectSortField {
   NAME = 'name',

@@ -1,12 +1,19 @@
-import {
-  ExceptionFilter,
-  Catch,
-  ArgumentsHost,
-  HttpException,
-  HttpStatus,
-  Logger,
-} from '@nestjs/common';
+import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { Request, Response } from 'express';
+
+function messageFromHttpResponseBody(response: string | Record<string, unknown>): string {
+  if (typeof response === 'string') {
+    return response;
+  }
+  const raw = response.message;
+  if (typeof raw === 'string') {
+    return raw;
+  }
+  if (Array.isArray(raw) && raw.every((m): m is string => typeof m === 'string')) {
+    return raw.join(', ');
+  }
+  return 'An error occurred';
+}
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -21,26 +28,25 @@ export class HttpExceptionFilter implements ExceptionFilter {
       this.logger.error('Unhandled exception', exception instanceof Error ? exception.stack : exception);
     }
 
-    const status =
-      exception instanceof HttpException
-        ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+    const status = exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    const message =
-      exception instanceof HttpException
-        ? exception.getResponse()
-        : 'Internal server error';
+    const body = exception instanceof HttpException ? exception.getResponse() : 'Internal server error';
 
-    const errorResponse = {
-      statusCode: status,
-      timestamp: new Date().toISOString(),
-      path: request.url,
-      message:
-        typeof message === 'string'
-          ? message
-          : (message as any).message || 'An error occurred',
-      ...(typeof message === 'object' && message !== null ? message : {}),
-    };
+    const errorResponse =
+      typeof body === 'string'
+        ? {
+            statusCode: status,
+            timestamp: new Date().toISOString(),
+            path: request.url,
+            message: body,
+          }
+        : {
+            statusCode: status,
+            timestamp: new Date().toISOString(),
+            path: request.url,
+            message: messageFromHttpResponseBody(body as Record<string, unknown>),
+            ...body,
+          };
 
     response.status(status).json(errorResponse);
   }

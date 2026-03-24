@@ -16,11 +16,7 @@ export interface PaginationResult {
 /**
  * Calculate pagination parameters
  */
-export function calculatePagination(
-  page: number,
-  pageSize: number,
-  maxPageSize: number = 100,
-): PaginationResult {
+export function calculatePagination(page: number, pageSize: number, maxPageSize: number = 100): PaginationResult {
   const normalizedPage = Math.max(1, page);
   const normalizedPageSize = Math.min(Math.max(1, pageSize), maxPageSize);
   const skip = (normalizedPage - 1) * normalizedPageSize;

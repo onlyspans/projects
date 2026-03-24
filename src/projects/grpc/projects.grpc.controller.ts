@@ -16,8 +16,9 @@ import {
   Environment as GrpcEnvironment,
   type GrpcProject,
 } from '../interfaces/grpc.interface';
-import { ProjectStatus, type Project } from '../entities/project.entity';
-import { Environment } from '@environments/entities/environment.entity';
+import { ProjectStatus } from '../constants/project-status';
+import type { Project } from '../types/project.types';
+import type { Environment } from '@database/generated/client';
 import { CreateProjectDto } from '../dto/create-project.dto';
 import { UpdateProjectDto } from '../dto/update-project.dto';
 import { QueryProjectsDto } from '../dto/query-projects.dto';
@@ -144,13 +145,13 @@ export class ProjectsGrpcController {
     };
   }
 
-  private mapProjectStatusToGrpc(status: ProjectStatus): GrpcProjectStatus {
+  private mapProjectStatusToGrpc(status: string): GrpcProjectStatus {
     switch (status) {
-      case ProjectStatus.ACTIVE:
+      case 'active':
         return GrpcProjectStatus.PROJECT_STATUS_ACTIVE;
-      case ProjectStatus.ARCHIVED:
+      case 'archived':
         return GrpcProjectStatus.PROJECT_STATUS_ARCHIVED;
-      case ProjectStatus.SUSPENDED:
+      case 'suspended':
         return GrpcProjectStatus.PROJECT_STATUS_SUSPENDED;
       default:
         return GrpcProjectStatus.PROJECT_STATUS_UNSPECIFIED;

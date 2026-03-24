@@ -22,7 +22,7 @@ import { ProjectsService } from '../services/projects.service';
 import { CreateProjectDto } from '../dto/create-project.dto';
 import { UpdateProjectDto } from '../dto/update-project.dto';
 import { QueryProjectsDto } from '../dto/query-projects.dto';
-import { Project } from '../entities/project.entity';
+import type { Project } from '../types/project.types';
 import { PaginatedResponse } from '@common/interfaces/paginated-response.interface';
 import { PROJECT_ICON_MAX_SIZE_BYTES } from '@storage/storage.constants';
 import type { ProjectIconUpload } from '@storage/storage.constants';

@@ -18,7 +18,9 @@ export class IsSlugUniqueConstraint implements ValidatorConstraintInterface {
       return true; // Let other validators handle empty values
     }
 
-    const [excludeId] = args.constraints;
+    const constraints = args.constraints as unknown[];
+    const rawExcludeId = constraints[0];
+    const excludeId = typeof rawExcludeId === 'string' ? rawExcludeId : undefined;
     return this.projectsRepository.isSlugUnique(slug, excludeId);
   }
 
@@ -27,10 +29,7 @@ export class IsSlugUniqueConstraint implements ValidatorConstraintInterface {
   }
 }
 
-export function IsSlugUnique(
-  excludeId?: string,
-  validationOptions?: ValidationOptions,
-) {
+export function IsSlugUnique(excludeId?: string, validationOptions?: ValidationOptions) {
   return function (object: object, propertyName: string) {
     registerDecorator({
       target: object.constructor,

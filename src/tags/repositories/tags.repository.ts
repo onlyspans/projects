@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere } from 'typeorm';
-import { Tag } from '../entities/tag.entity';
+import { Prisma } from '@database/generated/client';
+import { DatabaseService } from '@database/database.service';
+import type { Tag } from '@database/generated/client';
 import { PaginatedResponse } from '@common/interfaces/paginated-response.interface';
 import { calculatePagination, calculateTotalPages } from '@common/utils/pagination.util';
 
@@ -13,26 +13,24 @@ export interface FindTagsOptions {
 
 @Injectable()
 export class TagsRepository {
-  constructor(
-    @InjectRepository(Tag)
-    private readonly tagRepository: Repository<Tag>,
-  ) {}
+  constructor(private readonly db: DatabaseService) {}
 
-  /**
-   * Find all tags with pagination and filtering
-   */
   async findAll(options: FindTagsOptions = {}): Promise<PaginatedResponse<Tag>> {
     const { page = 1, pageSize = 20, search } = options;
 
     const { skip, take } = calculatePagination(page, pageSize);
 
-    const queryBuilder = this.tagRepository.createQueryBuilder('tag');
+    const where: Prisma.TagWhereInput = search ? { name: { contains: search, mode: 'insensitive' } } : {};
 
-    if (search) {
-      queryBuilder.where('tag.name ILIKE :search', { search: `%${search}%` });
-    }
-
-    const [items, total] = await queryBuilder.skip(skip).take(take).orderBy('tag.createdAt', 'DESC').getManyAndCount();
+    const [items, total] = await this.db.$transaction([
+      this.db.tag.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
+      this.db.tag.count({ where }),
+    ]);
 
     const totalPages = calculateTotalPages(total, take);
 
@@ -45,37 +43,29 @@ export class TagsRepository {
     };
   }
 
-  /**
-   * Find one tag by ID
-   */
   async findOne(id: string): Promise<Tag | null> {
-    return this.tagRepository.findOne({
-      where: { id } as FindOptionsWhere<Tag>,
-    });
+    return this.db.tag.findUnique({ where: { id } });
   }
 
-  /**
-   * Find tag by name
-   */
   async findByName(name: string): Promise<Tag | null> {
-    return this.tagRepository.findOne({
-      where: { name } as FindOptionsWhere<Tag>,
+    return this.db.tag.findUnique({ where: { name } });
+  }
+
+  async create(data: { name: string; description?: string | null; color?: string | null }): Promise<Tag> {
+    return this.db.tag.create({
+      data: {
+        name: data.name,
+        description: data.description ?? null,
+        color: data.color ?? null,
+      },
     });
   }
 
-  /**
-   * Create a new tag
-   */
-  async create(data: Partial<Tag>): Promise<Tag> {
-    const tag = this.tagRepository.create(data);
-    return this.tagRepository.save(tag);
-  }
-
-  /**
-   * Update a tag
-   */
-  async update(id: string, data: Partial<Tag>): Promise<Tag> {
-    await this.tagRepository.update(id, data);
+  async update(id: string, data: { name?: string; description?: string | null; color?: string | null }): Promise<Tag> {
+    await this.db.tag.update({
+      where: { id },
+      data,
+    });
     const tag = await this.findOne(id);
     if (!tag) {
       throw new Error(`Tag with ID ${id} not found after update`);
@@ -83,34 +73,22 @@ export class TagsRepository {
     return tag;
   }
 
-  /**
-   * Delete a tag
-   */
   async delete(id: string): Promise<void> {
-    await this.tagRepository.delete(id);
+    await this.db.tag.delete({ where: { id } });
   }
 
-  /**
-   * Check if tag exists
-   */
   async exists(id: string): Promise<boolean> {
-    const count = await this.tagRepository.count({
-      where: { id } as FindOptionsWhere<Tag>,
-    });
+    const count = await this.db.tag.count({ where: { id } });
     return count > 0;
   }
 
-  /**
-   * Check if tag name is unique
-   */
   async isNameUnique(name: string, excludeId?: string): Promise<boolean> {
-    const queryBuilder = this.tagRepository.createQueryBuilder('tag').where('tag.name = :name', { name });
-
-    if (excludeId) {
-      queryBuilder.andWhere('tag.id != :excludeId', { excludeId });
-    }
-
-    const count = await queryBuilder.getCount();
+    const count = await this.db.tag.count({
+      where: {
+        name,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+    });
     return count === 0;
   }
 }

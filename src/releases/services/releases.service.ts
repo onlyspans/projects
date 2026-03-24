@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Prisma } from '@database/generated/client';
 import { ReleasesRepository } from '../repositories/releases.repository';
 import { ProjectsService } from '@projects/services/projects.service';
-import { Release } from '../entities/release.entity';
+import type { Release } from '../types/release.types';
 import { CreateReleaseDto } from '../dto/create-release.dto';
 import { UpdateReleaseDto } from '../dto/update-release.dto';
 import { QueryReleasesDto } from '../dto/query-releases.dto';
@@ -68,8 +69,8 @@ export class ReleasesService {
       version: createReleaseDto.version,
       changelog: createReleaseDto.changelog,
       notes: createReleaseDto.notes,
-      structure: createReleaseDto.structure || {},
-      metadata: createReleaseDto.metadata || {},
+      structure: (createReleaseDto.structure || {}) as Prisma.InputJsonValue,
+      metadata: (createReleaseDto.metadata || {}) as Prisma.InputJsonValue,
     });
 
     return this.findOne(release.id);
@@ -81,12 +82,22 @@ export class ReleasesService {
   async update(id: string, updateReleaseDto: UpdateReleaseDto, projectId?: string): Promise<Release> {
     await this.findOne(id, projectId);
 
-    const updateData: Partial<Release> = {};
+    const updateData: {
+      snapshotId?: string | null;
+      changelog?: string | null;
+      notes?: string | null;
+      structure?: Prisma.InputJsonValue;
+      metadata?: Prisma.InputJsonValue;
+    } = {};
     if (updateReleaseDto.snapshotId !== undefined) updateData.snapshotId = updateReleaseDto.snapshotId;
     if (updateReleaseDto.changelog !== undefined) updateData.changelog = updateReleaseDto.changelog;
     if (updateReleaseDto.notes !== undefined) updateData.notes = updateReleaseDto.notes;
-    if (updateReleaseDto.structure !== undefined) updateData.structure = updateReleaseDto.structure;
-    if (updateReleaseDto.metadata !== undefined) updateData.metadata = updateReleaseDto.metadata;
+    if (updateReleaseDto.structure !== undefined) {
+      updateData.structure = updateReleaseDto.structure as Prisma.InputJsonValue;
+    }
+    if (updateReleaseDto.metadata !== undefined) {
+      updateData.metadata = updateReleaseDto.metadata as Prisma.InputJsonValue;
+    }
 
     await this.releasesRepository.update(id, updateData);
     return this.findOne(id);
@@ -96,11 +107,11 @@ export class ReleasesService {
    * Update release structure (called by snapper)
    */
   async updateStructure(id: string, snapshotId: string, structure: ReleaseStructure): Promise<Release> {
-    const release = await this.findOne(id);
+    await this.findOne(id);
 
     await this.releasesRepository.update(id, {
       snapshotId,
-      structure: structure as any,
+      structure: structure as unknown as Prisma.InputJsonValue,
     });
 
     return this.findOne(id);

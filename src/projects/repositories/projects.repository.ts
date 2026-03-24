@@ -1,10 +1,25 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere, In } from 'typeorm';
-import { Project, ProjectStatus } from '../entities/project.entity';
-import { Tag } from '@tags/entities/tag.entity';
+import { Prisma } from '@database/generated/client';
+import { DatabaseService } from '@database/database.service';
+import { serializeEnvironmentIds } from '@database/environment-ids';
 import { PaginatedResponse } from '@common/interfaces/paginated-response.interface';
 import { calculatePagination, calculateTotalPages } from '@common/utils/pagination.util';
+import { ProjectStatus } from '../constants/project-status';
+import type { Project } from '../types/project.types';
+
+const projectWithTagsInclude = {
+  projectTags: { include: { tag: true } },
+} satisfies Prisma.ProjectInclude;
+
+type ProjectRow = Prisma.ProjectGetPayload<{ include: typeof projectWithTagsInclude }>;
+
+function toProject(row: ProjectRow): Project {
+  const { projectTags, ...rest } = row;
+  return {
+    ...rest,
+    tags: projectTags.map((pt) => pt.tag),
+  };
+}
 
 export interface FindProjectsOptions {
   page?: number;
@@ -19,16 +34,8 @@ export interface FindProjectsOptions {
 
 @Injectable()
 export class ProjectsRepository {
-  constructor(
-    @InjectRepository(Project)
-    private readonly projectRepository: Repository<Project>,
-    @InjectRepository(Tag)
-    private readonly tagRepository: Repository<Tag>,
-  ) {}
+  constructor(private readonly db: DatabaseService) {}
 
-  /**
-   * Find all projects with pagination and filtering
-   */
   async findAll(options: FindProjectsOptions = {}): Promise<PaginatedResponse<Project>> {
     const {
       page = 1,
@@ -43,45 +50,45 @@ export class ProjectsRepository {
 
     const { skip, take } = calculatePagination(page, pageSize);
 
-    const queryBuilder = this.projectRepository
-      .createQueryBuilder('project')
-      .leftJoinAndSelect('project.tags', 'tags')
-      .where('project.deletedAt IS NULL');
+    const where: Prisma.ProjectWhereInput = {
+      deletedAt: null,
+      ...(ownerId ? { ownerId } : {}),
+      ...(status !== undefined ? { status } : {}),
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' } },
+              { slug: { contains: search, mode: 'insensitive' } },
+              { description: { contains: search, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+      ...(tagIds?.length
+        ? {
+            projectTags: { some: { tagId: { in: tagIds } } },
+          }
+        : {}),
+    };
 
-    if (ownerId) {
-      queryBuilder.andWhere('project.ownerId = :ownerId', { ownerId });
-    }
+    const orderBy: Prisma.ProjectOrderByWithRelationInput = {
+      [sortBy]: sortOrder,
+    };
 
-    if (status) {
-      queryBuilder.andWhere('project.status = :status', { status });
-    }
-
-    if (search) {
-      queryBuilder.andWhere(
-        '(project.name ILIKE :search OR project.slug ILIKE :search OR project.description ILIKE :search)',
-        { search: `%${search}%` },
-      );
-    }
-
-    if (tagIds && tagIds.length > 0) {
-      queryBuilder.andWhere('project.id IN (SELECT project_id FROM project_tags WHERE tag_id IN (:...tagIds))', {
-        tagIds,
-      });
-    }
-
-    const orderDirection = sortOrder.toUpperCase() as 'ASC' | 'DESC';
-    const orderColumn = `project.${sortBy}`;
-
-    const [items, total] = await queryBuilder
-      .skip(skip)
-      .take(take)
-      .orderBy(orderColumn, orderDirection)
-      .getManyAndCount();
+    const [rows, total] = await this.db.$transaction([
+      this.db.project.findMany({
+        where,
+        include: projectWithTagsInclude,
+        orderBy,
+        skip,
+        take,
+      }),
+      this.db.project.count({ where }),
+    ]);
 
     const totalPages = calculateTotalPages(total, take);
 
     return {
-      items,
+      items: rows.map(toProject),
       total,
       page,
       pageSize: take,
@@ -89,39 +96,87 @@ export class ProjectsRepository {
     };
   }
 
-  /**
-   * Find one project by ID
-   */
   async findOne(id: string): Promise<Project | null> {
-    return this.projectRepository.findOne({
-      where: { id } as FindOptionsWhere<Project>,
-      relations: ['tags'],
+    const row = await this.db.project.findFirst({
+      where: { id, deletedAt: null },
+      include: projectWithTagsInclude,
     });
+    return row ? toProject(row) : null;
   }
 
-  /**
-   * Find project by slug
-   */
   async findBySlug(slug: string): Promise<Project | null> {
-    return this.projectRepository.findOne({
-      where: { slug } as FindOptionsWhere<Project>,
-      relations: ['tags'],
+    const row = await this.db.project.findFirst({
+      where: { slug, deletedAt: null },
+      include: projectWithTagsInclude,
     });
+    return row ? toProject(row) : null;
   }
 
-  /**
-   * Create a new project
-   */
-  async create(data: Partial<Project>): Promise<Project> {
-    const project = this.projectRepository.create(data);
-    return this.projectRepository.save(project);
+  async create(data: {
+    name: string;
+    slug: string;
+    description?: string | null;
+    imageUrl?: string | null;
+    emoji?: string | null;
+    status?: ProjectStatus;
+    ownerId?: string | null;
+    environmentIds: string[] | string;
+    metadata?: Prisma.InputJsonValue;
+  }): Promise<Project> {
+    const environmentIds =
+      typeof data.environmentIds === 'string' ? data.environmentIds : serializeEnvironmentIds(data.environmentIds);
+
+    const row = await this.db.project.create({
+      data: {
+        name: data.name,
+        slug: data.slug,
+        description: data.description ?? null,
+        imageUrl: data.imageUrl ?? null,
+        emoji: data.emoji ?? null,
+        status: data.status ?? ProjectStatus.ACTIVE,
+        ownerId: data.ownerId ?? null,
+        environmentIds,
+        metadata: data.metadata ?? {},
+      },
+      include: projectWithTagsInclude,
+    });
+    return toProject(row);
   }
 
-  /**
-   * Update a project
-   */
-  async update(id: string, data: Partial<Project>): Promise<Project> {
-    await this.projectRepository.update(id, data);
+  async update(
+    id: string,
+    data: {
+      name?: string;
+      slug?: string;
+      description?: string | null;
+      imageUrl?: string | null;
+      emoji?: string | null;
+      status?: ProjectStatus;
+      ownerId?: string | null;
+      environmentIds?: string[] | string;
+      metadata?: Prisma.InputJsonValue;
+    },
+  ): Promise<Project> {
+    const updateData: Prisma.ProjectUpdateInput = {};
+
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.slug !== undefined) updateData.slug = data.slug;
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl;
+    if (data.emoji !== undefined) updateData.emoji = data.emoji;
+    if (data.status !== undefined) updateData.status = data.status;
+    if (data.ownerId !== undefined) updateData.ownerId = data.ownerId;
+    if (data.metadata !== undefined) updateData.metadata = data.metadata;
+    if (data.environmentIds !== undefined) {
+      updateData.environmentIds =
+        typeof data.environmentIds === 'string' ? data.environmentIds : serializeEnvironmentIds(data.environmentIds);
+    }
+
+    await this.db.project.update({
+      where: { id },
+      data: updateData,
+    });
+
     const project = await this.findOne(id);
     if (!project) {
       throw new Error(`Project with ID ${id} not found after update`);
@@ -129,75 +184,39 @@ export class ProjectsRepository {
     return project;
   }
 
-  /**
-   * Soft delete a project
-   */
   async softDelete(id: string): Promise<void> {
-    await this.projectRepository.softDelete(id);
+    await this.db.project.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
   }
 
-  /**
-   * Check if project exists
-   */
   async exists(id: string): Promise<boolean> {
-    const count = await this.projectRepository.count({
-      where: { id } as FindOptionsWhere<Project>,
+    const count = await this.db.project.count({
+      where: { id, deletedAt: null },
     });
     return count > 0;
   }
 
-  /**
-   * Check if slug is unique
-   */
   async isSlugUnique(slug: string, excludeId?: string): Promise<boolean> {
-    const queryBuilder = this.projectRepository
-      .createQueryBuilder('project')
-      .where('project.slug = :slug', { slug })
-      .andWhere('project.deletedAt IS NULL');
-
-    if (excludeId) {
-      queryBuilder.andWhere('project.id != :excludeId', { excludeId });
-    }
-
-    const count = await queryBuilder.getCount();
+    const count = await this.db.project.count({
+      where: {
+        slug,
+        deletedAt: null,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+    });
     return count === 0;
   }
 
-  /**
-   * Load tags for project
-   */
-  async loadTags(project: Project, tagIds: string[]): Promise<void> {
-    if (tagIds && tagIds.length > 0) {
-      const tags = await this.tagRepository.find({
-        where: { id: In(tagIds) },
-      });
-      project.tags = tags;
-    } else {
-      project.tags = [];
-    }
-  }
-
-  /**
-   * Set tags relation for a project (updates junction table)
-   */
   async setProjectTags(projectId: string, tagIds: string[]): Promise<void> {
-    const tags =
-      tagIds && tagIds.length > 0
-        ? await this.tagRepository.find({
-            where: { id: In(tagIds) },
-          })
-        : [];
-
-    const existingTags = await this.projectRepository
-      .createQueryBuilder()
-      .relation(Project, 'tags')
-      .of(projectId)
-      .loadMany<Tag>();
-
-    await this.projectRepository
-      .createQueryBuilder()
-      .relation(Project, 'tags')
-      .of(projectId)
-      .addAndRemove(tags, existingTags);
+    await this.db.$transaction(async (tx) => {
+      await tx.projectTag.deleteMany({ where: { projectId } });
+      if (tagIds.length === 0) return;
+      await tx.projectTag.createMany({
+        data: tagIds.map((tagId) => ({ projectId, tagId })),
+        skipDuplicates: true,
+      });
+    });
   }
 }

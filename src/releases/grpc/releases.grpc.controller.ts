@@ -10,20 +10,33 @@ import {
   UpdateReleaseStructureRequest,
   DeleteReleaseRequest,
   GetReleaseStructureRequest,
+  Release as GrpcRelease,
 } from '../interfaces/grpc.interface';
-import { Release } from '../entities/release.entity';
+import type { Release } from '../types/release.types';
 import { CreateReleaseDto } from '../dto/create-release.dto';
 import { UpdateReleaseDto } from '../dto/update-release.dto';
 import { QueryReleasesDto } from '../dto/query-releases.dto';
 import { ReleaseStructure } from '../interfaces/release-structure.interface';
+
+function grpcMetadataFromJson(value: unknown): Record<string, string> {
+  if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      out[k] = v == null ? '' : typeof v === 'string' ? v : JSON.stringify(v);
+    }
+    return out;
+  }
+  return {};
+}
 
 @Controller()
 export class ReleasesGrpcController {
   constructor(private readonly releasesService: ReleasesService) {}
 
   @GrpcMethod('ReleasesService', 'GetRelease')
-  async getRelease(data: GetReleaseRequest): Promise<Release> {
-    return this.releasesService.findOne(data.id);
+  async getRelease(data: GetReleaseRequest): Promise<GrpcRelease> {
+    const release = await this.releasesService.findOne(data.id);
+    return this.mapReleaseToGrpc(release);
   }
 
   @GrpcMethod('ReleasesService', 'ListReleases')
@@ -45,34 +58,37 @@ export class ReleasesGrpcController {
   }
 
   @GrpcMethod('ReleasesService', 'CreateRelease')
-  async createRelease(data: CreateReleaseRequest): Promise<Release> {
+  async createRelease(data: CreateReleaseRequest): Promise<GrpcRelease> {
     const dto: CreateReleaseDto = {
       version: data.version,
       changelog: data.changelog,
       notes: data.notes,
-      structure: data.structure as any,
+      structure: data.structure,
       metadata: data.metadata,
     };
 
-    return this.releasesService.create(data.projectId, dto);
+    const release = await this.releasesService.create(data.projectId, dto);
+    return this.mapReleaseToGrpc(release);
   }
 
   @GrpcMethod('ReleasesService', 'UpdateRelease')
-  async updateRelease(data: UpdateReleaseRequest): Promise<Release> {
+  async updateRelease(data: UpdateReleaseRequest): Promise<GrpcRelease> {
     const dto: UpdateReleaseDto = {
       snapshotId: data.snapshotId,
       changelog: data.changelog,
       notes: data.notes,
-      structure: data.structure as any,
+      structure: data.structure,
       metadata: data.metadata,
     };
 
-    return this.releasesService.update(data.id, dto);
+    const release = await this.releasesService.update(data.id, dto);
+    return this.mapReleaseToGrpc(release);
   }
 
   @GrpcMethod('ReleasesService', 'UpdateReleaseStructure')
-  async updateReleaseStructure(data: UpdateReleaseStructureRequest): Promise<Release> {
-    return this.releasesService.updateStructure(data.id, data.snapshotId, data.structure as ReleaseStructure);
+  async updateReleaseStructure(data: UpdateReleaseStructureRequest): Promise<GrpcRelease> {
+    const release = await this.releasesService.updateStructure(data.id, data.snapshotId, data.structure);
+    return this.mapReleaseToGrpc(release);
   }
 
   @GrpcMethod('ReleasesService', 'DeleteRelease')
@@ -85,7 +101,12 @@ export class ReleasesGrpcController {
     return this.releasesService.getStructure(data.id);
   }
 
-  private mapReleaseToGrpc(release: Release): any {
+  private mapReleaseToGrpc(release: Release): GrpcRelease {
+    const structure =
+      release.structure !== null && typeof release.structure === 'object'
+        ? (release.structure as unknown as ReleaseStructure)
+        : undefined;
+
     return {
       id: release.id,
       projectId: release.projectId,
@@ -93,8 +114,8 @@ export class ReleasesGrpcController {
       snapshotId: release.snapshotId || '',
       changelog: release.changelog || '',
       notes: release.notes || '',
-      structure: release.structure || {},
-      metadata: release.metadata || {},
+      structure,
+      metadata: grpcMetadataFromJson(release.metadata),
       createdAt: release.createdAt,
       updatedAt: release.updatedAt,
     };

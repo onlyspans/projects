@@ -1,7 +1,9 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Prisma } from '@database/generated/client';
 import { ProjectsRepository } from '../repositories/projects.repository';
 import { EnvironmentsRepository } from '@environments/repositories/environments.repository';
-import { Project, ProjectStatus } from '../entities/project.entity';
+import { Project } from '../types/project.types';
+import { ProjectStatus } from '../constants/project-status';
 import { CreateProjectDto } from '../dto/create-project.dto';
 import { UpdateProjectDto } from '../dto/update-project.dto';
 import { QueryProjectsDto } from '../dto/query-projects.dto';
@@ -109,7 +111,17 @@ export class ProjectsService {
       }
     }
 
-    const updateData: Partial<Project> = {};
+    const updateData: {
+      name?: string;
+      slug?: string;
+      description?: string | null;
+      imageUrl?: string | null;
+      emoji?: string | null;
+      status?: ProjectStatus;
+      ownerId?: string | null;
+      environmentIds?: string[];
+      metadata?: Record<string, unknown>;
+    } = {};
     if (updateProjectDto.name !== undefined) updateData.name = updateProjectDto.name;
     if (updateProjectDto.slug !== undefined) updateData.slug = updateProjectDto.slug;
     if (updateProjectDto.description !== undefined) updateData.description = updateProjectDto.description;
@@ -122,7 +134,11 @@ export class ProjectsService {
     }
     if (updateProjectDto.metadata !== undefined) updateData.metadata = updateProjectDto.metadata;
 
-    await this.projectsRepository.update(id, updateData);
+    const { metadata, ...rest } = updateData;
+    await this.projectsRepository.update(id, {
+      ...rest,
+      ...(metadata !== undefined ? { metadata: metadata as Prisma.InputJsonValue } : {}),
+    });
 
     // Update tags if provided
     if (updateProjectDto.tagIds !== undefined) {
@@ -136,7 +152,7 @@ export class ProjectsService {
    * Soft delete a project
    */
   async remove(id: string): Promise<void> {
-    const project = await this.findOne(id);
+    await this.findOne(id);
     await this.projectsRepository.softDelete(id);
   }
 

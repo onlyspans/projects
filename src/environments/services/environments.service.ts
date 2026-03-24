@@ -1,23 +1,17 @@
-import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
-  BadRequestException,
-} from '@nestjs/common';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource, IsNull } from 'typeorm';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { EnvironmentsRepository } from '../repositories/environments.repository';
-import { Environment } from '../entities/environment.entity';
+import type { Environment } from '@database/generated/client';
 import { CreateEnvironmentDto } from '../dto/create-environment.dto';
 import { UpdateEnvironmentDto } from '../dto/update-environment.dto';
 import { ReorderEnvironmentsDto } from '../dto/reorder-environments.dto';
-import { Project } from '@projects/entities/project.entity';
+import { DatabaseService } from '@database/database.service';
+import { parseEnvironmentIds, serializeEnvironmentIds } from '@database/environment-ids';
 
 @Injectable()
 export class EnvironmentsService {
   constructor(
     private readonly environmentsRepository: EnvironmentsRepository,
-    @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly database: DatabaseService,
   ) {}
 
   async findAll(): Promise<Environment[]> {
@@ -48,12 +42,18 @@ export class EnvironmentsService {
 
     const orderedIds = dto.environmentIds;
 
-    await this.dataSource.transaction(async (manager) => {
+    await this.database.$transaction(async (tx) => {
       for (let i = 0; i < orderedIds.length; i++) {
-        await manager.update(Environment, { id: orderedIds[i] }, { position: -(i + 1) });
+        await tx.environment.update({
+          where: { id: orderedIds[i] },
+          data: { position: -(i + 1) },
+        });
       }
       for (let i = 0; i < orderedIds.length; i++) {
-        await manager.update(Environment, { id: orderedIds[i] }, { position: i + 1 });
+        await tx.environment.update({
+          where: { id: orderedIds[i] },
+          data: { position: i + 1 },
+        });
       }
     });
 
@@ -91,7 +91,7 @@ export class EnvironmentsService {
       }
     }
 
-    const updateData: Partial<Environment> = {};
+    const updateData: { name?: string; description?: string | null; position?: number } = {};
     if (dto.name !== undefined) updateData.name = dto.name;
     if (dto.description !== undefined) updateData.description = dto.description ?? null;
     if (dto.position !== undefined) updateData.position = dto.position;
@@ -103,17 +103,23 @@ export class EnvironmentsService {
   async remove(id: string): Promise<void> {
     await this.findOne(id);
 
-    await this.dataSource.transaction(async (manager) => {
-      await manager.softDelete(Environment, { id });
+    await this.database.$transaction(async (tx) => {
+      await tx.environment.update({
+        where: { id },
+        data: { deletedAt: new Date() },
+      });
 
-      const projects = await manager.find(Project, {
-        where: { deletedAt: IsNull() },
+      const projects = await tx.project.findMany({
+        where: { deletedAt: null },
       });
       for (const p of projects) {
-        const ids = p.environmentIds ?? [];
+        const ids = parseEnvironmentIds(p.environmentIds);
         if (!ids.includes(id)) continue;
-        await manager.update(Project, p.id, {
-          environmentIds: ids.filter((x) => x !== id),
+        await tx.project.update({
+          where: { id: p.id },
+          data: {
+            environmentIds: serializeEnvironmentIds(ids.filter((x) => x !== id)),
+          },
         });
       }
     });

@@ -4,7 +4,7 @@ import { EnvironmentsService } from '../services/environments.service';
 import { CreateEnvironmentDto } from '../dto/create-environment.dto';
 import { UpdateEnvironmentDto } from '../dto/update-environment.dto';
 import { ReorderEnvironmentsDto } from '../dto/reorder-environments.dto';
-import { Environment } from '../entities/environment.entity';
+import type { Environment } from '@database/generated/client';
 
 @ApiTags('environments')
 @Controller('environments')

@@ -3,6 +3,9 @@
 /node_modules
 /build
 
+# Prisma (regenerate with `bun prisma generate` or `bun run build`)
+/src/database/generated
+
 # Logs
 logs
 *.log

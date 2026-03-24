@@ -1,48 +1,57 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, IsNull } from 'typeorm';
-import { Environment } from '../entities/environment.entity';
-import { Project } from '@projects/entities/project.entity';
+import { DatabaseService } from '@database/database.service';
+import { parseEnvironmentIds } from '@database/environment-ids';
+import type { Environment } from '@database/generated/client';
+
+export type ProjectWithEnvironmentIds = {
+  id: string;
+  environmentIds: string;
+  environments?: Environment[];
+};
 
 @Injectable()
 export class EnvironmentsRepository {
-  constructor(
-    @InjectRepository(Environment)
-    private readonly environmentRepository: Repository<Environment>,
-  ) {}
+  constructor(private readonly db: DatabaseService) {}
 
   async findAllActiveOrdered(): Promise<Environment[]> {
-    return this.environmentRepository.find({
-      where: { deletedAt: IsNull() },
-      order: { position: 'ASC' },
+    return this.db.environment.findMany({
+      where: { deletedAt: null },
+      orderBy: { position: 'asc' },
     });
   }
 
   async findOneActiveById(id: string): Promise<Environment | null> {
-    return this.environmentRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+    return this.db.environment.findFirst({
+      where: { id, deletedAt: null },
     });
   }
 
   async isPositionTakenByActive(position: number, excludeId?: string): Promise<boolean> {
-    const qb = this.environmentRepository
-      .createQueryBuilder('e')
-      .where('e.position = :position', { position })
-      .andWhere('e.deleted_at IS NULL');
-    if (excludeId) {
-      qb.andWhere('e.id != :excludeId', { excludeId });
-    }
-    const count = await qb.getCount();
+    const count = await this.db.environment.count({
+      where: {
+        position,
+        deletedAt: null,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+    });
     return count > 0;
   }
 
-  async create(data: Partial<Environment>): Promise<Environment> {
-    const entity = this.environmentRepository.create(data);
-    return this.environmentRepository.save(entity);
+  async create(data: Pick<Environment, 'name' | 'position'> & { description?: string | null }): Promise<Environment> {
+    return this.db.environment.create({
+      data: {
+        name: data.name,
+        position: data.position,
+        description: data.description ?? null,
+      },
+    });
   }
 
-  async update(id: string, data: Partial<Environment>): Promise<void> {
-    await this.environmentRepository.update(id, data);
+  async update(id: string, data: Partial<Pick<Environment, 'name' | 'description' | 'position'>>): Promise<void> {
+    await this.db.environment.update({
+      where: { id },
+      data,
+    });
   }
 
   async findActiveByIdsSorted(ids: string[]): Promise<Environment[]> {
@@ -50,30 +59,30 @@ export class EnvironmentsRepository {
       return [];
     }
     const unique = [...new Set(ids)];
-    return this.environmentRepository.find({
-      where: { id: In(unique), deletedAt: IsNull() },
-      order: { position: 'ASC' },
+    return this.db.environment.findMany({
+      where: { id: { in: unique }, deletedAt: null },
+      orderBy: { position: 'asc' },
     });
   }
 
-  async attachToProjects(projects: Project[]): Promise<void> {
+  async attachToProjects(projects: ProjectWithEnvironmentIds[]): Promise<void> {
     if (!projects.length) {
       return;
     }
-    const allIds = [...new Set(projects.flatMap((p) => p.environmentIds ?? []))];
+    const allIds = [...new Set(projects.flatMap((p) => parseEnvironmentIds(p.environmentIds)))];
     if (allIds.length === 0) {
       for (const p of projects) {
         p.environments = [];
       }
       return;
     }
-    const envs = await this.environmentRepository.find({
-      where: { id: In(allIds), deletedAt: IsNull() },
-      order: { position: 'ASC' },
+    const envs = await this.db.environment.findMany({
+      where: { id: { in: allIds }, deletedAt: null },
+      orderBy: { position: 'asc' },
     });
     const byId = new Map(envs.map((e) => [e.id, e]));
     for (const p of projects) {
-      p.environments = (p.environmentIds ?? [])
+      p.environments = parseEnvironmentIds(p.environmentIds)
         .map((id) => byId.get(id))
         .filter((e): e is Environment => e !== undefined);
     }
