@@ -31,7 +31,7 @@ export class ReleasesRepository {
       this.db.release.findMany({
         where,
         include: releaseWithProjectInclude,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         skip,
         take,
       }),
@@ -67,7 +67,7 @@ export class ReleasesRepository {
     return this.db.release.findMany({
       where: { projectId, deletedAt: null },
       include: releaseWithProjectInclude,
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     });
   }
 
