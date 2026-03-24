@@ -2,9 +2,9 @@ import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
 import { ConfigService } from '@config/config.service';
 import { Tag } from '@tags/entities/tag.entity';
-import { Project } from '@projects/entities/project.entity';
+import { Project, ProjectStatus } from '@projects/entities/project.entity';
 import { Release } from '@releases/entities/release.entity';
-import { ProjectStatus, LifecycleStage } from '@projects/entities/project.entity';
+import { Environment } from '@environments/entities/environment.entity';
 
 @Injectable()
 export class DatabaseSeeder implements OnApplicationBootstrap {
@@ -14,9 +14,7 @@ export class DatabaseSeeder implements OnApplicationBootstrap {
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
-    const shouldSeed =
-      this.configService.app.nodeEnv === 'development' ||
-      process.env.RUN_SEED === 'true';
+    const shouldSeed = this.configService.app.nodeEnv === 'development' || process.env.RUN_SEED === 'true';
 
     if (!shouldSeed) {
       return;
@@ -36,10 +34,29 @@ export class DatabaseSeeder implements OnApplicationBootstrap {
     const releaseRepo = this.dataSource.getRepository(Release);
 
     const tags = await this.seedTags(tagRepo);
-    const projects = await this.seedProjects(projectRepo, tags);
+    const envRepo = this.dataSource.getRepository(Environment);
+    const envByName = await this.resolveEnvironmentsByName(envRepo);
+    const projects = await this.seedProjects(projectRepo, tags, envByName);
     await this.seedReleases(releaseRepo, projects);
 
     console.log('🌱 Database seeded with sample data');
+  }
+
+  private async resolveEnvironmentsByName(envRepo: Repository<Environment>): Promise<Record<string, string>> {
+    const envs = await envRepo.find({ order: { position: 'ASC' } });
+    const map: Record<string, string> = {};
+    for (const e of envs) {
+      map[e.name] = e.id;
+    }
+    const required = ['development', 'staging', 'production'];
+    for (const name of required) {
+      if (!map[name]) {
+        throw new Error(
+          `Seeding requires environments from DB migrations (missing "${name}"). Run migrations before seeding.`,
+        );
+      }
+    }
+    return map;
   }
 
   private async seedTags(repo: Repository<Tag>) {
@@ -53,7 +70,7 @@ export class DatabaseSeeder implements OnApplicationBootstrap {
     return repo.save(entities);
   }
 
-  private async seedProjects(repo: Repository<Project>, tags: Tag[]) {
+  private async seedProjects(repo: Repository<Project>, tags: Tag[], envByName: Record<string, string>) {
     const [tagWeb, tagMobile, tagApi, tagDemo] = tags;
     const data = [
       {
@@ -62,7 +79,7 @@ export class DatabaseSeeder implements OnApplicationBootstrap {
         description: 'Example web application for development',
         status: ProjectStatus.ACTIVE,
         ownerId: null,
-        lifecycleStages: [LifecycleStage.DEVELOPMENT, LifecycleStage.STAGING],
+        environmentIds: [envByName['development'], envByName['staging']],
         metadata: {},
         tags: [tagWeb, tagDemo],
       },
@@ -72,7 +89,7 @@ export class DatabaseSeeder implements OnApplicationBootstrap {
         description: 'Mobile SDK and tooling',
         status: ProjectStatus.ACTIVE,
         ownerId: null,
-        lifecycleStages: [LifecycleStage.DEVELOPMENT],
+        environmentIds: [envByName['development']],
         metadata: {},
         tags: [tagMobile, tagApi],
       },
@@ -82,7 +99,7 @@ export class DatabaseSeeder implements OnApplicationBootstrap {
         description: 'Public REST and gRPC API',
         status: ProjectStatus.ACTIVE,
         ownerId: null,
-        lifecycleStages: [LifecycleStage.STAGING, LifecycleStage.PRODUCTION],
+        environmentIds: [envByName['staging'], envByName['production']],
         metadata: {},
         tags: [tagApi],
       },

@@ -10,22 +10,22 @@ export enum ProjectStatus {
   PROJECT_STATUS_SUSPENDED = 3,
 }
 
-export enum LifecycleStage {
-  LIFECYCLE_STAGE_UNSPECIFIED = 0,
-  LIFECYCLE_STAGE_DEVELOPMENT = 1,
-  LIFECYCLE_STAGE_TESTING = 2,
-  LIFECYCLE_STAGE_STAGING = 3,
-  LIFECYCLE_STAGE_PRODUCTION = 4,
+export interface Environment {
+  id: string;
+  name: string;
+  description?: string;
+  position: number;
 }
 
-export interface Project {
+/** Serialized Project message for gRPC responses. */
+export interface GrpcProject {
   id: string;
   name: string;
   slug: string;
-  description?: string;
+  description: string;
   status: ProjectStatus;
-  ownerId?: string;
-  lifecycleStages: LifecycleStage[];
+  ownerId: string;
+  environments: Environment[];
   tagIds: string[];
   metadata: Record<string, string>;
   createdAt?: Date | string;
@@ -46,7 +46,7 @@ export interface ListProjectsRequest {
 }
 
 export interface ListProjectsResponse {
-  items: Project[];
+  items: GrpcProject[];
   total: number;
   page: number;
   pageSize: number;
@@ -58,7 +58,7 @@ export interface CreateProjectRequest {
   description?: string;
   status?: ProjectStatus;
   ownerId?: string;
-  lifecycleStages?: LifecycleStage[];
+  environmentIds?: string[];
   tagIds?: string[];
   metadata?: Record<string, string>;
 }
@@ -70,7 +70,7 @@ export interface UpdateProjectRequest {
   description?: string;
   status?: ProjectStatus;
   ownerId?: string;
-  lifecycleStages?: LifecycleStage[];
+  environmentIds?: string[];
   tagIds?: string[];
   metadata?: Record<string, string>;
 }

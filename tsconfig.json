@@ -15,6 +15,7 @@
       "@common/*": ["src/common/*"],
       "@config/*": ["src/config/*"],
       "@database/*": ["src/database/*"],
+      "@environments/*": ["src/environments/*"],
       "@integrations/*": ["src/integrations/*"],
       "@metrics/*": ["src/metrics/*"],
       "@projects/*": ["src/projects/*"],

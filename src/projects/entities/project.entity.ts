@@ -12,18 +12,12 @@ import {
 } from 'typeorm';
 import { Release } from '@releases/entities/release.entity';
 import { Tag } from '@tags/entities/tag.entity';
+import type { Environment } from '@environments/entities/environment.entity';
 
 export enum ProjectStatus {
   ACTIVE = 'active',
   ARCHIVED = 'archived',
   SUSPENDED = 'suspended',
-}
-
-export enum LifecycleStage {
-  DEVELOPMENT = 'development',
-  TESTING = 'testing',
-  STAGING = 'staging',
-  PRODUCTION = 'production',
 }
 
 @Entity('projects')
@@ -70,9 +64,11 @@ export class Project {
   @Column({
     type: 'simple-array',
     default: '',
-    name: 'lifecycle_stages',
+    name: 'environment_ids',
   })
-  lifecycleStages: LifecycleStage[];
+  environmentIds: string[];
+
+  environments?: Environment[];
 
   @Column({ type: 'jsonb', default: {} })
   metadata: Record<string, any>;

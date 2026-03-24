@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { ProjectsRepository } from '../repositories/projects.repository';
+import { EnvironmentsRepository } from '@environments/repositories/environments.repository';
 import { Project, ProjectStatus } from '../entities/project.entity';
 import { CreateProjectDto } from '../dto/create-project.dto';
 import { UpdateProjectDto } from '../dto/update-project.dto';
@@ -16,6 +17,7 @@ import {
 export class ProjectsService {
   constructor(
     private readonly projectsRepository: ProjectsRepository,
+    private readonly environmentsRepository: EnvironmentsRepository,
     private readonly storageService: StorageService,
   ) {}
 
@@ -23,7 +25,7 @@ export class ProjectsService {
    * Get paginated list of projects with filtering
    */
   async findAll(query: QueryProjectsDto): Promise<PaginatedResponse<Project>> {
-    return this.projectsRepository.findAll({
+    const result = await this.projectsRepository.findAll({
       page: query.page,
       pageSize: query.pageSize,
       ownerId: query.ownerId,
@@ -33,6 +35,8 @@ export class ProjectsService {
       sortBy: query.sortBy,
       sortOrder: query.sortOrder,
     });
+    await this.environmentsRepository.attachToProjects(result.items);
+    return result;
   }
 
   /**
@@ -43,6 +47,7 @@ export class ProjectsService {
     if (!project) {
       throw new NotFoundException(`Project with ID ${id} not found`);
     }
+    await this.environmentsRepository.attachToProjects([project]);
     return project;
   }
 
@@ -54,6 +59,7 @@ export class ProjectsService {
     if (!project) {
       throw new NotFoundException(`Project with slug "${slug}" not found`);
     }
+    await this.environmentsRepository.attachToProjects([project]);
     return project;
   }
 
@@ -67,6 +73,8 @@ export class ProjectsService {
       throw new ConflictException(`Project with slug "${createProjectDto.slug}" already exists`);
     }
 
+    const environmentIds = await this.canonicalizeEnvironmentIds(createProjectDto.environmentIds);
+
     const project = await this.projectsRepository.create({
       name: createProjectDto.name,
       slug: createProjectDto.slug,
@@ -75,7 +83,7 @@ export class ProjectsService {
       emoji: createProjectDto.emoji ?? null,
       status: createProjectDto.status || ProjectStatus.ACTIVE,
       ownerId: createProjectDto.ownerId,
-      lifecycleStages: createProjectDto.lifecycleStages || [],
+      environmentIds,
       metadata: createProjectDto.metadata || {},
     });
 
@@ -109,7 +117,9 @@ export class ProjectsService {
     if (updateProjectDto.emoji !== undefined) updateData.emoji = updateProjectDto.emoji ?? null;
     if (updateProjectDto.status !== undefined) updateData.status = updateProjectDto.status;
     if (updateProjectDto.ownerId !== undefined) updateData.ownerId = updateProjectDto.ownerId;
-    if (updateProjectDto.lifecycleStages !== undefined) updateData.lifecycleStages = updateProjectDto.lifecycleStages;
+    if (updateProjectDto.environmentIds !== undefined) {
+      updateData.environmentIds = await this.canonicalizeEnvironmentIds(updateProjectDto.environmentIds);
+    }
     if (updateProjectDto.metadata !== undefined) updateData.metadata = updateProjectDto.metadata;
 
     await this.projectsRepository.update(id, updateData);
@@ -154,5 +164,17 @@ export class ProjectsService {
     const { publicUrl } = await this.storageService.saveProjectIcon(file.buffer, file.mimetype, file.originalname);
     await this.projectsRepository.update(projectId, { imageUrl: publicUrl });
     return this.findOne(projectId);
+  }
+
+  private async canonicalizeEnvironmentIds(ids: string[] | undefined): Promise<string[]> {
+    if (!ids?.length) {
+      return [];
+    }
+    const unique = [...new Set(ids)];
+    const rows = await this.environmentsRepository.findActiveByIdsSorted(unique);
+    if (rows.length !== unique.length) {
+      throw new BadRequestException('One or more environment IDs are invalid or have been removed');
+    }
+    return rows.map((r) => r.id);
   }
 }

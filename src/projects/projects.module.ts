@@ -9,9 +9,10 @@ import { Tag } from '@tags/entities/tag.entity';
 import { IsSlugUniqueConstraint } from './validators/is-slug-unique.validator';
 import { TagsModule } from '@tags/tags.module';
 import { StorageModule } from '@storage/storage.module';
+import { EnvironmentsModule } from '@environments/environments.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Project, Tag]), TagsModule, StorageModule],
+  imports: [TypeOrmModule.forFeature([Project, Tag]), TagsModule, StorageModule, EnvironmentsModule],
   controllers: [ProjectsController, ProjectsGrpcController],
   providers: [ProjectsService, ProjectsRepository, IsSlugUniqueConstraint],
   exports: [ProjectsService, ProjectsRepository],

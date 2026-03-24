@@ -1,6 +1,6 @@
 import { IsString, IsOptional, IsEnum, IsArray, IsUUID, IsObject, IsUrl, MinLength, MaxLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ProjectStatus, LifecycleStage } from '../entities/project.entity';
+import { ProjectStatus } from '../entities/project.entity';
 
 export class CreateProjectDto {
   @ApiProperty({ description: 'Project name', example: 'My Awesome Project' })
@@ -42,11 +42,15 @@ export class CreateProjectDto {
   @IsUUID()
   ownerId?: string;
 
-  @ApiPropertyOptional({ enum: LifecycleStage, isArray: true })
+  @ApiPropertyOptional({
+    description:
+      'Environment IDs from the environments catalog. On create/update, duplicates are removed and IDs are stored sorted by catalog `position` (pipeline order: dev → … → prod).',
+    type: [String],
+  })
   @IsOptional()
   @IsArray()
-  @IsEnum(LifecycleStage, { each: true })
-  lifecycleStages?: LifecycleStage[];
+  @IsUUID('4', { each: true })
+  environmentIds?: string[];
 
   @ApiPropertyOptional({ description: 'Tag IDs', type: [String] })
   @IsOptional()

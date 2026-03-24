@@ -5,6 +5,7 @@ import { join } from 'path';
 import { Project } from '@projects/entities/project.entity';
 import { Tag } from '@tags/entities/tag.entity';
 import { Release } from '@releases/entities/release.entity';
+import { Environment } from '@environments/entities/environment.entity';
 import { ConfigService } from '@config/config.service';
 import { DatabaseSeeder } from './seeds/database.seeder';
 
@@ -21,7 +22,7 @@ import { DatabaseSeeder } from './seeds/database.seeder';
         return {
           type: 'postgres',
           url: dbConfig.url,
-          entities: [Project, Tag, Release],
+          entities: [Project, Tag, Release, Environment],
           synchronize: dbConfig.synchronize,
           logging: isDevelopment,
           migrations: [join(__dirname, 'migrations', '*.{ts,js}')],
