@@ -12,7 +12,8 @@ RUN bun install --frozen-lockfile
 # Copy source code
 COPY . .
 
-# Build the application
+# prisma.config.ts resolves DATABASE_URL when Prisma loads; generate does not connect to the DB
+ENV DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build
 RUN bun run build
 
 # Production stage
