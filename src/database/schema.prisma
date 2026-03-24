@@ -17,7 +17,7 @@ enum ProjectStatus {
 model Project {
   id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name           String        @db.VarChar(255)
-  slug           String        @unique @db.VarChar(255)
+  slug           String        @db.VarChar(255)
   description    String?
   imageUrl       String?       @map("image_url") @db.VarChar(2048)
   emoji          String?       @db.VarChar(20)
@@ -32,6 +32,7 @@ model Project {
   projectTags ProjectTag[]
   releases    Release[]
 
+  @@unique([slug], map: "projects_slug_active_key", where: raw("deleted_at IS NULL"))
   @@index([ownerId], map: "projects_owner_active_idx", where: raw("deleted_at IS NULL"))
   @@index([status], map: "projects_status_active_idx", where: raw("deleted_at IS NULL"))
   @@map("projects")

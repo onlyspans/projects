@@ -3,7 +3,8 @@
  * These interfaces match the Protocol Buffers definitions in projects.proto
  */
 
-export enum ProjectStatus {
+/** gRPC / Protocol Buffers enum (numeric), not the Prisma domain enum. */
+export enum GrpcProjectStatus {
   PROJECT_STATUS_UNSPECIFIED = 0,
   PROJECT_STATUS_ACTIVE = 1,
   PROJECT_STATUS_ARCHIVED = 2,
@@ -23,7 +24,7 @@ export interface GrpcProject {
   name: string;
   slug: string;
   description: string;
-  status: ProjectStatus;
+  status: GrpcProjectStatus;
   ownerId: string;
   environments: Environment[];
   tagIds: string[];
@@ -38,7 +39,7 @@ export interface GetProjectRequest {
 
 export interface ListProjectsRequest {
   ownerId?: string;
-  status?: ProjectStatus;
+  status?: GrpcProjectStatus;
   page?: number;
   pageSize?: number;
   search?: string;
@@ -56,7 +57,7 @@ export interface CreateProjectRequest {
   name: string;
   slug: string;
   description?: string;
-  status?: ProjectStatus;
+  status?: GrpcProjectStatus;
   ownerId?: string;
   environmentIds?: string[];
   tagIds?: string[];
@@ -68,7 +69,7 @@ export interface UpdateProjectRequest {
   name?: string;
   slug?: string;
   description?: string;
-  status?: ProjectStatus;
+  status?: GrpcProjectStatus;
   ownerId?: string;
   environmentIds?: string[];
   tagIds?: string[];

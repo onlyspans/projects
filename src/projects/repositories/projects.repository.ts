@@ -4,7 +4,7 @@ import { DatabaseService } from '@database/database.service';
 import { serializeEnvironmentIds } from '@database/environment-ids';
 import { PaginatedResponse } from '@common/interfaces/paginated-response.interface';
 import { calculatePagination, calculateTotalPages } from '@common/utils/pagination.util';
-import { ProjectStatus } from '../constants/project-status';
+import { ProjectStatus } from '@database/generated/client';
 import type { Project } from '../types/project.types';
 
 const projectWithTagsInclude = {
@@ -133,7 +133,7 @@ export class ProjectsRepository {
         description: data.description ?? null,
         imageUrl: data.imageUrl ?? null,
         emoji: data.emoji ?? null,
-        status: data.status ?? ProjectStatus.ACTIVE,
+        status: data.status ?? ProjectStatus.active,
         ownerId: data.ownerId ?? null,
         environmentIds,
         metadata: data.metadata ?? {},

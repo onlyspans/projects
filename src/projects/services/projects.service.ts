@@ -3,7 +3,7 @@ import { Prisma } from '@database/generated/client';
 import { ProjectsRepository } from '../repositories/projects.repository';
 import { EnvironmentsRepository } from '@environments/repositories/environments.repository';
 import { Project } from '../types/project.types';
-import { ProjectStatus } from '../constants/project-status';
+import { ProjectStatus } from '@database/generated/client';
 import { CreateProjectDto } from '../dto/create-project.dto';
 import { UpdateProjectDto } from '../dto/update-project.dto';
 import { QueryProjectsDto } from '../dto/query-projects.dto';
@@ -83,7 +83,7 @@ export class ProjectsService {
       description: createProjectDto.description,
       imageUrl: createProjectDto.imageUrl ?? null,
       emoji: createProjectDto.emoji ?? null,
-      status: createProjectDto.status || ProjectStatus.ACTIVE,
+      status: createProjectDto.status || ProjectStatus.active,
       ownerId: createProjectDto.ownerId,
       environmentIds,
       metadata: createProjectDto.metadata || {},

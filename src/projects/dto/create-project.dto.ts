@@ -1,6 +1,6 @@
 import { IsString, IsOptional, IsEnum, IsArray, IsUUID, IsObject, IsUrl, MinLength, MaxLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ProjectStatus } from '../constants/project-status';
+import { ProjectStatus } from '@database/generated/client';
 
 export class CreateProjectDto {
   @ApiProperty({ description: 'Project name', example: 'My Awesome Project' })
@@ -32,7 +32,7 @@ export class CreateProjectDto {
   @MaxLength(20)
   emoji?: string;
 
-  @ApiPropertyOptional({ enum: ProjectStatus, default: ProjectStatus.ACTIVE })
+  @ApiPropertyOptional({ enum: ProjectStatus, default: ProjectStatus.active })
   @IsOptional()
   @IsEnum(ProjectStatus)
   status?: ProjectStatus;

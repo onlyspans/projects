@@ -12,11 +12,11 @@ import {
   ProjectExistsResponse,
   HealthCheckRequest,
   HealthCheckResponse,
-  ProjectStatus as GrpcProjectStatus,
+  GrpcProjectStatus,
   Environment as GrpcEnvironment,
   type GrpcProject,
 } from '../interfaces/grpc.interface';
-import { ProjectStatus } from '../constants/project-status';
+import { ProjectStatus } from '@database/generated/client';
 import type { Project } from '../types/project.types';
 import type { Environment } from '@database/generated/client';
 import { CreateProjectDto } from '../dto/create-project.dto';
@@ -110,13 +110,13 @@ export class ProjectsGrpcController {
   private mapGrpcProjectStatus(status: GrpcProjectStatus): ProjectStatus {
     switch (status) {
       case GrpcProjectStatus.PROJECT_STATUS_ACTIVE:
-        return ProjectStatus.ACTIVE;
+        return ProjectStatus.active;
       case GrpcProjectStatus.PROJECT_STATUS_ARCHIVED:
-        return ProjectStatus.ARCHIVED;
+        return ProjectStatus.archived;
       case GrpcProjectStatus.PROJECT_STATUS_SUSPENDED:
-        return ProjectStatus.SUSPENDED;
+        return ProjectStatus.suspended;
       default:
-        return ProjectStatus.ACTIVE;
+        return ProjectStatus.active;
     }
   }
 
@@ -145,13 +145,13 @@ export class ProjectsGrpcController {
     };
   }
 
-  private mapProjectStatusToGrpc(status: string): GrpcProjectStatus {
+  private mapProjectStatusToGrpc(status: ProjectStatus): GrpcProjectStatus {
     switch (status) {
-      case 'active':
+      case ProjectStatus.active:
         return GrpcProjectStatus.PROJECT_STATUS_ACTIVE;
-      case 'archived':
+      case ProjectStatus.archived:
         return GrpcProjectStatus.PROJECT_STATUS_ARCHIVED;
-      case 'suspended':
+      case ProjectStatus.suspended:
         return GrpcProjectStatus.PROJECT_STATUS_SUSPENDED;
       default:
         return GrpcProjectStatus.PROJECT_STATUS_UNSPECIFIED;

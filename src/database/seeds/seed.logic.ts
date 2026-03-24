@@ -1,6 +1,6 @@
 import type { PrismaClient, Tag } from '../generated/client';
 import { serializeEnvironmentIds } from '../environment-ids';
-import { ProjectStatus } from '@projects/constants/project-status';
+import { ProjectStatus } from '../generated/client';
 
 export async function runSeed(db: PrismaClient): Promise<void> {
   const existing = await db.project.count();
@@ -55,7 +55,7 @@ async function seedProjects(db: PrismaClient, tags: Tag[], envByName: Record<str
       name: 'Sample Web App',
       slug: 'sample-web-app',
       description: 'Example web application for development',
-      status: ProjectStatus.ACTIVE,
+      status: ProjectStatus.active,
       ownerId: null as string | null,
       environmentIds: serializeEnvironmentIds([envByName['development'], envByName['staging']]),
       metadata: {},
@@ -65,7 +65,7 @@ async function seedProjects(db: PrismaClient, tags: Tag[], envByName: Record<str
       name: 'Mobile SDK',
       slug: 'mobile-sdk',
       description: 'Mobile SDK and tooling',
-      status: ProjectStatus.ACTIVE,
+      status: ProjectStatus.active,
       ownerId: null as string | null,
       environmentIds: serializeEnvironmentIds([envByName['development']]),
       metadata: {},
@@ -75,7 +75,7 @@ async function seedProjects(db: PrismaClient, tags: Tag[], envByName: Record<str
       name: 'Public API',
       slug: 'public-api',
       description: 'Public REST and gRPC API',
-      status: ProjectStatus.ACTIVE,
+      status: ProjectStatus.active,
       ownerId: null as string | null,
       environmentIds: serializeEnvironmentIds([envByName['staging'], envByName['production']]),
       metadata: {},
