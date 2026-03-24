@@ -11,6 +11,40 @@ export class EnvironmentsRepository {
     private readonly environmentRepository: Repository<Environment>,
   ) {}
 
+  async findAllActiveOrdered(): Promise<Environment[]> {
+    return this.environmentRepository.find({
+      where: { deletedAt: IsNull() },
+      order: { position: 'ASC' },
+    });
+  }
+
+  async findOneActiveById(id: string): Promise<Environment | null> {
+    return this.environmentRepository.findOne({
+      where: { id, deletedAt: IsNull() },
+    });
+  }
+
+  async isPositionTakenByActive(position: number, excludeId?: string): Promise<boolean> {
+    const qb = this.environmentRepository
+      .createQueryBuilder('e')
+      .where('e.position = :position', { position })
+      .andWhere('e.deleted_at IS NULL');
+    if (excludeId) {
+      qb.andWhere('e.id != :excludeId', { excludeId });
+    }
+    const count = await qb.getCount();
+    return count > 0;
+  }
+
+  async create(data: Partial<Environment>): Promise<Environment> {
+    const entity = this.environmentRepository.create(data);
+    return this.environmentRepository.save(entity);
+  }
+
+  async update(id: string, data: Partial<Environment>): Promise<void> {
+    await this.environmentRepository.update(id, data);
+  }
+
   async findActiveByIdsSorted(ids: string[]): Promise<Environment[]> {
     if (ids.length === 0) {
       return [];
@@ -39,7 +73,9 @@ export class EnvironmentsRepository {
     });
     const byId = new Map(envs.map((e) => [e.id, e]));
     for (const p of projects) {
-      p.environments = (p.environmentIds ?? []).map((id) => byId.get(id)).filter((e): e is Environment => e !== undefined);
+      p.environments = (p.environmentIds ?? [])
+        .map((id) => byId.get(id))
+        .filter((e): e is Environment => e !== undefined);
     }
   }
 }
