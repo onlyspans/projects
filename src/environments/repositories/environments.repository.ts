@@ -36,17 +36,23 @@ export class EnvironmentsRepository {
     return count > 0;
   }
 
-  async create(data: Pick<Environment, 'name' | 'position'> & { description?: string | null }): Promise<Environment> {
+  async create(
+    data: Pick<Environment, 'name' | 'position'> & { description?: string | null; color?: string | null },
+  ): Promise<Environment> {
     return this.db.environment.create({
       data: {
         name: data.name,
         position: data.position,
         description: data.description ?? null,
+        color: data.color ?? null,
       },
     });
   }
 
-  async update(id: string, data: Partial<Pick<Environment, 'name' | 'description' | 'position'>>): Promise<void> {
+  async update(
+    id: string,
+    data: Partial<Pick<Environment, 'name' | 'description' | 'position' | 'color'>>,
+  ): Promise<void> {
     await this.db.environment.update({
       where: { id },
       data,

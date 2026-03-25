@@ -76,6 +76,7 @@ export class EnvironmentsService {
     return this.environmentsRepository.create({
       name: dto.name,
       description: dto.description ?? null,
+      color: dto.color ?? null,
       position: dto.position,
     });
   }
@@ -90,9 +91,10 @@ export class EnvironmentsService {
       }
     }
 
-    const updateData: { name?: string; description?: string | null; position?: number } = {};
+    const updateData: { name?: string; description?: string | null; color?: string | null; position?: number } = {};
     if (dto.name !== undefined) updateData.name = dto.name;
     if (dto.description !== undefined) updateData.description = dto.description ?? null;
+    if (dto.color !== undefined) updateData.color = dto.color ?? null;
     if (dto.position !== undefined) updateData.position = dto.position;
 
     await this.environmentsRepository.update(id, updateData);

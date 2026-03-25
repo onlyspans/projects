@@ -19,6 +19,7 @@ message Environment {
   string name = 2;
   string description = 3;
   int32 position = 4;
+  string color = 5;
 }
 
 message Project {

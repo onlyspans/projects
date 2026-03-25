@@ -142,6 +142,7 @@ export class ProjectsGrpcController {
       name: env.name,
       description: env.description ?? '',
       position: env.position,
+      color: env.color ?? '',
     };
   }
 

@@ -16,6 +16,7 @@ export interface Environment {
   name: string;
   description?: string;
   position: number;
+  color?: string;
 }
 
 /** Serialized Project message for gRPC responses. */
