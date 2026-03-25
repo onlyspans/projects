@@ -35,7 +35,8 @@ targets-plane → projects → processes / variables / assets
 
 - **Runtime:** [Bun](https://bun.sh)
 - **Framework:** [NestJS](https://nestjs.com) 11
-- **ORM:** TypeORM, PostgreSQL
+- **Database:** PostgreSQL
+- **ORM:** Prisma
 - **API:** REST (Express), gRPC (Protocol Buffers), [Swagger](https://swagger.io) (OpenAPI)
 - **Хранилище файлов:** S3-совместимое (Yandex Object Storage) — иконки проектов
 - **Валидация:** class-validator, class-transformer
@@ -49,6 +50,7 @@ targets-plane → projects → processes / variables / assets
 
 - [Bun](https://bun.sh) ≥ 1.0
 - PostgreSQL 16 (или использовать Docker)
+- (опционально) Docker / Docker Compose — для запуска PostgreSQL или полного стека
 
 ---
 
@@ -76,13 +78,15 @@ cp .env.example .env
 | `PORT`                 | Порт HTTP API                                   | `4000`                                                      |
 | `GRPC_PORT`            | Порт gRPC                                       | `4001`                                                      |
 | `DATABASE_URL`         | DSN подключения к PostgreSQL                    | `postgresql://postgres:postgres@localhost:5432/projects_db` |
-| `AUTO_MIGRATE`         | Запуск миграций при старте                      | `false`                                                     |
 | `CORS_ORIGIN`          | Разрешённые origins для CORS                    | см. `.env.example`                                          |
 | `S3_BUCKET`            | Имя бакета S3 (обязательно для загрузки иконок) | —                                                           |
 | `S3_ACCESS_KEY_ID`     | Ключ доступа S3                                 | —                                                           |
 | `S3_SECRET_ACCESS_KEY` | Секретный ключ S3                               | —                                                           |
 | `S3_ENDPOINT`          | (опц.) Endpoint S3                              | `https://storage.yandexcloud.net`                           |
 | `S3_REGION`            | (опц.) Регион                                   | `ru-central1`                                               |
+| `DB_LOG_QUERIES`       | (опц.) Prisma query logging                     | `false`                                                     |
+| `DB_LOG_LEVEL`         | (опц.) Prisma log level                         | `warn`                                                      |
+| `RUN_SEED`             | (опц.) Выполнить сид при старте                 | `false`                                                     |
 
 Для загрузки иконок проектов (`POST /api/projects/:id/icon`) нужны переменные S3; без них эндпоинт вернёт ошибку.
 
@@ -103,55 +107,58 @@ docker compose -f docker-compose.dev.yml up -d
 bun run start:dev
 ```
 
-В режиме разработки:
+После запуска:
 
-- Включена синхронизация схемы TypeORM с БД (`synchronize: true`)
-- При первом запуске с пустой БД выполняется сидер с тестовыми данными
-- REST API: **http://localhost:4000/api**
-- Swagger: **http://localhost:4000/api-docs**
-- gRPC: **localhost:4001**
+- REST API: `http://localhost:${PORT}/api`
+- Swagger: `http://localhost:${PORT}/api-docs`
+- gRPC: `0.0.0.0:${GRPC_PORT}`
+- Liveness probe: `GET /healthz`
+- Readiness probe (проверяет БД): `GET /readyz`
 
 ---
 
 ## Скрипты
 
-| Команда               | Описание                                       |
-|-----------------------|------------------------------------------------|
-| `bun run start`       | Запуск без watch                               |
-| `bun run start:dev`   | Запуск в режиме разработки (watch)             |
-| `bun run start:debug` | Запуск с отладчиком                            |
-| `bun run start:prod`  | Запуск собранного приложения (`bun dist/main`) |
-| `bun run build`       | Сборка в `dist/`                               |
-| `bun run lint`        | ESLint с автоисправлением                      |
-| `bun run format`      | Prettier по `src` и `test`                     |
-| `bun run test`        | Unit-тесты                                     |
-| `bun run test:e2e`    | E2E-тесты                                      |
-| `bun run test:cov`    | Покрытие тестами                               |
+| Команда                         | Описание                                          |
+|---------------------------------|---------------------------------------------------|
+| `bun run start`                 | Запуск без watch                                  |
+| `bun run start:dev`             | Запуск в режиме разработки (watch)                |
+| `bun run start:debug`           | Запуск с отладчиком                               |
+| `bun run start:prod`            | Запуск собранного приложения (`bun dist/main`)    |
+| `bun run build`                 | Генерация Prisma client + сборка Nest + tsc-alias |
+| `bun run lint`                  | ESLint с автоисправлением                         |
+| `bun run format`                | Prettier по `src` и `test`                        |
+| `bun run test`                  | Unit-тесты                                        |
+| `bun run test:e2e`              | E2E-тесты                                         |
+| `bun run test:cov`              | Покрытие тестами                                  |
+| `bun run prisma:studio`         | Prisma Studio                                     |
+| `bun run prisma:migrate:dev`    | Prisma migrate dev (локальная разработка)         |
+| `bun run prisma:migrate:deploy` | Prisma migrate deploy (staging/production)        |
+| `bun run db:seed`               | Запуск сида (Prisma)                              |
 
-### Миграции (TypeORM)
+### Миграции (Prisma)
 
-Миграции используются в staging/production. В development по умолчанию используется `synchronize: true`.
+Для development обычно используют `prisma migrate dev`. Для staging/production — `prisma migrate deploy`.
 
 ```bash
-# Создать миграцию по изменениям сущностей
-bun run migration:generate -- src/database/migrations/MigrationName
+# development (создаёт/применяет миграции)
+bun run prisma:migrate:dev
 
-# Применить миграции
-bun run migration:run
-
-# Откатить последнюю миграцию
-bun run migration:revert
-
-# Список миграций
-bun run migration:show
+# production/staging (только применяет уже существующие миграции)
+bun run prisma:migrate:deploy
 ```
 
 ---
 
 ## Сидер
 
-В режиме `NODE_ENV=development` или при `RUN_SEED=true` при старте приложения выполняется сидер: если таблицы проектов
-пустые, создаются тестовые теги, проекты и релизы. Для принудительного сида можно запустить с `RUN_SEED=true`.
+Сид можно запустить вручную:
+
+```bash
+bun run db:seed
+```
+
+Также можно включить автозапуск при старте через `RUN_SEED=true` (см. `.env.example`).
 
 ---
 
@@ -188,13 +195,28 @@ grpcurl -plaintext localhost:4001 list projects.v1
 
 ## Docker
 
-Сборка образа приложения:
+### Сборка образа
 
 ```bash
 docker build -t projects-microservice .
 ```
 
-Для полного стека (приложение + PostgreSQL) используйте `docker-compose.yml` в корне репозитория.
+### Запуск полного стека (app + PostgreSQL)
+
+В корневом `docker-compose.yml` контейнер приложения по умолчанию слушает **3000 (HTTP)** и **5000 (gRPC)**, а здоровье
+проверяется по `GET /healthz` на HTTP-порту (см. `Dockerfile`).
+
+Запуск:
+
+```bash
+docker compose up --build -d
+```
+
+Если хотите те же порты, что и локально (4000/4001), просто задайте их переменными окружения перед запуском:
+
+```bash
+PORT=4000 GRPC_PORT=4001 docker compose up --build -d
+```
 
 ---
 
@@ -228,24 +250,24 @@ helm/
 
 **Secrets** (`Settings → Secrets`):
 
-| Имя                            | Описание                                              |
-|--------------------------------|-------------------------------------------------------|
-| `DOCKER_REGISTRY_USERNAME`     | Логин в container registry                            |
-| `DOCKER_REGISTRY_TOKEN`        | Пароль / токен registry                               |
-| `KUBECONFIG`                   | kubeconfig в base64 (`base64 -w0 ~/.kube/config`)     |
-| `PROJECTS_DATABASE_URL`        | DSN PostgreSQL (`postgresql://user:pass@host/db`)     |
-| `PROJECTS_S3_ACCESS_KEY_ID`    | Ключ доступа S3                                       |
-| `PROJECTS_S3_SECRET_ACCESS_KEY`| Секретный ключ S3                                     |
-| `PROJECTS_S3_BUCKET`           | Имя бакета S3                                         |
+| Имя                             | Описание                                          |
+|---------------------------------|---------------------------------------------------|
+| `DOCKER_REGISTRY_USERNAME`      | Логин в container registry                        |
+| `DOCKER_REGISTRY_TOKEN`         | Пароль / токен registry                           |
+| `KUBECONFIG`                    | kubeconfig в base64 (`base64 -w0 ~/.kube/config`) |
+| `PROJECTS_DATABASE_URL`         | DSN PostgreSQL (`postgresql://user:pass@host/db`) |
+| `PROJECTS_S3_ACCESS_KEY_ID`     | Ключ доступа S3                                   |
+| `PROJECTS_S3_SECRET_ACCESS_KEY` | Секретный ключ S3                                 |
+| `PROJECTS_S3_BUCKET`            | Имя бакета S3                                     |
 
 **Variables** (`Settings → Variables`):
 
-| Имя                    | Описание                                                    |
-|------------------------|-------------------------------------------------------------|
-| `REGISTRY`             | Адрес container registry                                    |
-| `IMAGE_PULL_SECRET`    | Имя imagePullSecret в кластере                              |
-| `PROJECTS_S3_ENDPOINT` | (опц.) Endpoint S3, по умолчанию Yandex Object Storage      |
-| `PROJECTS_S3_REGION`   | (опц.) Регион S3, по умолчанию `ru-central1`                |
+| Имя                    | Описание                                               |
+|------------------------|--------------------------------------------------------|
+| `REGISTRY`             | Адрес container registry                               |
+| `IMAGE_PULL_SECRET`    | Имя imagePullSecret в кластере                         |
+| `PROJECTS_S3_ENDPOINT` | (опц.) Endpoint S3, по умолчанию Yandex Object Storage |
+| `PROJECTS_S3_REGION`   | (опц.) Регион S3, по умолчанию `ru-central1`           |
 
 ---
 
