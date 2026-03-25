@@ -4,7 +4,7 @@ import { Reflector } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ReflectionService } from '@grpc/reflection';
-import { join } from 'path';
+import { resolveRepoProtoPath } from '@common/utils/proto-path.util';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { ConfigService } from '@config/config.service';
@@ -40,7 +40,7 @@ async function bootstrap() {
   SwaggerModule.setup('api-docs', app, document);
 
   const grpcPort = configService.app.grpcPort;
-  const protoPath = join(__dirname, 'proto/projects.proto');
+  const protoPath = resolveRepoProtoPath('projects.proto');
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.GRPC,
     options: {
