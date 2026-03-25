@@ -108,21 +108,18 @@ export class ReleasesRepository {
     if (data.snapshotId !== undefined) patch.snapshotId = data.snapshotId;
     if (data.changelog !== undefined) patch.changelog = data.changelog;
     if (data.notes !== undefined) patch.notes = data.notes;
-    if (data.structure !== undefined) patch.structure = data.structure as Prisma.JsonObject;
-    if (data.metadata !== undefined) patch.metadata = data.metadata as Prisma.JsonObject;
+    if (data.structure !== undefined) patch.structure = data.structure;
+    if (data.metadata !== undefined) patch.metadata = data.metadata;
 
-    const result = await this.db.release.updateMany({
+    const updated = await this.db.release.updateManyAndReturn({
       where: { id, deletedAt: null },
       data: patch,
+      include: releaseWithProjectInclude,
     });
-    if (result.count === 0) {
+    if (updated.length === 0) {
       throw new Error(`Release with ID ${id} not found`);
     }
-    const release = await this.findOne(id);
-    if (!release) {
-      throw new Error(`Release with ID ${id} not found after update`);
-    }
-    return release;
+    return updated[0];
   }
 
   async softDelete(id: string): Promise<void> {
