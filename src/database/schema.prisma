@@ -23,7 +23,7 @@ model Project {
   emoji          String?       @db.VarChar(20)
   status         ProjectStatus @default(active)
   ownerId        String?       @map("owner_id") @db.Uuid
-  environmentIds String        @default("") @map("environment_ids")
+  environmentIds String[]      @default([]) @map("environment_ids")
   metadata       Json          @default("{}")
   createdAt      DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @updatedAt @map("updated_at")

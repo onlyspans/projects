@@ -5,7 +5,6 @@ import { CreateEnvironmentDto } from '../dto/create-environment.dto';
 import { UpdateEnvironmentDto } from '../dto/update-environment.dto';
 import { ReorderEnvironmentsDto } from '../dto/reorder-environments.dto';
 import { DatabaseService } from '@database/database.service';
-import { parseEnvironmentIds, serializeEnvironmentIds } from '@database/environment-ids';
 
 @Injectable()
 export class EnvironmentsService {
@@ -113,12 +112,14 @@ export class EnvironmentsService {
         where: { deletedAt: null },
       });
       for (const p of projects) {
-        const ids = parseEnvironmentIds(p.environmentIds);
-        if (!ids.includes(id)) continue;
+        const ids = p.environmentIds ?? [];
+        if (!ids.includes(id)) {
+          continue;
+        }
         await tx.project.update({
           where: { id: p.id },
           data: {
-            environmentIds: serializeEnvironmentIds(ids.filter((x) => x !== id)),
+            environmentIds: ids.filter((x) => x !== id),
           },
         });
       }

@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@database/generated/client';
 import { DatabaseService } from '@database/database.service';
-import { serializeEnvironmentIds } from '@database/environment-ids';
 import { PaginatedResponse } from '@common/interfaces/paginated-response.interface';
 import { calculatePagination, calculateTotalPages } from '@common/utils/pagination.util';
 import { ProjectStatus } from '@database/generated/client';
@@ -120,12 +119,9 @@ export class ProjectsRepository {
     emoji?: string | null;
     status?: ProjectStatus;
     ownerId?: string | null;
-    environmentIds: string[] | string;
+    environmentIds: string[];
     metadata?: Prisma.InputJsonValue;
   }): Promise<Project> {
-    const environmentIds =
-      typeof data.environmentIds === 'string' ? data.environmentIds : serializeEnvironmentIds(data.environmentIds);
-
     const row = await this.db.project.create({
       data: {
         name: data.name,
@@ -135,7 +131,7 @@ export class ProjectsRepository {
         emoji: data.emoji ?? null,
         status: data.status ?? ProjectStatus.active,
         ownerId: data.ownerId ?? null,
-        environmentIds,
+        environmentIds: data.environmentIds,
         metadata: data.metadata ?? {},
       },
       include: projectWithTagsInclude,
@@ -153,7 +149,7 @@ export class ProjectsRepository {
       emoji?: string | null;
       status?: ProjectStatus;
       ownerId?: string | null;
-      environmentIds?: string[] | string;
+      environmentIds?: string[];
       metadata?: Prisma.InputJsonValue;
     },
   ): Promise<Project> {
@@ -168,8 +164,7 @@ export class ProjectsRepository {
     if (data.ownerId !== undefined) updateData.ownerId = data.ownerId;
     if (data.metadata !== undefined) updateData.metadata = data.metadata;
     if (data.environmentIds !== undefined) {
-      updateData.environmentIds =
-        typeof data.environmentIds === 'string' ? data.environmentIds : serializeEnvironmentIds(data.environmentIds);
+      updateData.environmentIds = data.environmentIds;
     }
 
     await this.db.project.update({

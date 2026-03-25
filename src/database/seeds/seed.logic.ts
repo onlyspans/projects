@@ -1,5 +1,4 @@
 import type { PrismaClient, Tag } from '../generated/client';
-import { serializeEnvironmentIds } from '../environment-ids';
 import { ProjectStatus } from '../generated/client';
 
 export async function runSeed(db: PrismaClient): Promise<void> {
@@ -57,7 +56,7 @@ async function seedProjects(db: PrismaClient, tags: Tag[], envByName: Record<str
       description: 'Example web application for development',
       status: ProjectStatus.active,
       ownerId: null as string | null,
-      environmentIds: serializeEnvironmentIds([envByName['development'], envByName['staging']]),
+      environmentIds: [envByName['development'], envByName['staging']],
       metadata: {},
       tagLinks: [{ tagId: tagWeb.id }, { tagId: tagDemo.id }],
     },
@@ -67,7 +66,7 @@ async function seedProjects(db: PrismaClient, tags: Tag[], envByName: Record<str
       description: 'Mobile SDK and tooling',
       status: ProjectStatus.active,
       ownerId: null as string | null,
-      environmentIds: serializeEnvironmentIds([envByName['development']]),
+      environmentIds: [envByName['development']],
       metadata: {},
       tagLinks: [{ tagId: tagMobile.id }, { tagId: tagApi.id }],
     },
@@ -77,7 +76,7 @@ async function seedProjects(db: PrismaClient, tags: Tag[], envByName: Record<str
       description: 'Public REST and gRPC API',
       status: ProjectStatus.active,
       ownerId: null as string | null,
-      environmentIds: serializeEnvironmentIds([envByName['staging'], envByName['production']]),
+      environmentIds: [envByName['staging'], envByName['production']],
       metadata: {},
       tagLinks: [{ tagId: tagApi.id }],
     },

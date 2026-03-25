@@ -1,11 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '@database/database.service';
-import { parseEnvironmentIds } from '@database/environment-ids';
 import type { Environment } from '@database/generated/client';
 
 export type ProjectWithEnvironmentIds = {
   id: string;
-  environmentIds: string;
+  environmentIds: string[];
   environments?: Environment[];
 };
 
@@ -69,7 +68,7 @@ export class EnvironmentsRepository {
     if (!projects.length) {
       return;
     }
-    const allIds = [...new Set(projects.flatMap((p) => parseEnvironmentIds(p.environmentIds)))];
+    const allIds = [...new Set(projects.flatMap((p) => p.environmentIds))];
     if (allIds.length === 0) {
       for (const p of projects) {
         p.environments = [];
@@ -82,9 +81,7 @@ export class EnvironmentsRepository {
     });
     const byId = new Map(envs.map((e) => [e.id, e]));
     for (const p of projects) {
-      p.environments = parseEnvironmentIds(p.environmentIds)
-        .map((id) => byId.get(id))
-        .filter((e): e is Environment => e !== undefined);
+      p.environments = p.environmentIds.map((id) => byId.get(id)).filter((e): e is Environment => e !== undefined);
     }
   }
 }
