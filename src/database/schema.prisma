@@ -1,0 +1,100 @@
+generator client {
+  provider        = "prisma-client"
+  output          = "./generated"
+  previewFeatures = ["partialIndexes"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ProjectStatus {
+  active
+  archived
+  suspended
+}
+
+model Project {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String        @db.VarChar(255)
+  slug           String        @db.VarChar(255)
+  description    String?
+  imageUrl       String?       @map("image_url") @db.VarChar(2048)
+  emoji          String?       @db.VarChar(20)
+  status         ProjectStatus @default(active)
+  ownerId        String?       @map("owner_id") @db.Uuid
+  environmentIds String[]      @default([]) @map("environment_ids")
+  metadata       Json          @default("{}")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  deletedAt      DateTime?     @map("deleted_at")
+
+  projectTags ProjectTag[]
+  releases    Release[]
+
+  @@unique([slug], map: "projects_slug_active_key", where: raw("deleted_at IS NULL"))
+  @@index([ownerId], map: "projects_owner_active_idx", where: raw("deleted_at IS NULL"))
+  @@index([status], map: "projects_status_active_idx", where: raw("deleted_at IS NULL"))
+  @@map("projects")
+}
+
+model Tag {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @unique @db.VarChar(100)
+  description String?
+  color       String?  @db.VarChar(7)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  projectTags ProjectTag[]
+
+  @@map("tags")
+}
+
+model ProjectTag {
+  projectId String  @map("project_id") @db.Uuid
+  tagId     String  @map("tag_id") @db.Uuid
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id])
+
+  @@id([projectId, tagId])
+  @@index([projectId], map: "project_tags_project_id_idx")
+  @@index([tagId], map: "project_tags_tag_id_idx")
+  @@map("project_tags")
+}
+
+model Release {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId  String    @map("project_id") @db.Uuid
+  version    String    @db.VarChar(50)
+  snapshotId String?   @map("snapshot_id") @db.Uuid
+  changelog  String?
+  notes      String?
+  structure  Json      @default("{}")
+  metadata   Json      @default("{}")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId], map: "releases_project_active_idx", where: raw("deleted_at IS NULL"))
+  @@index([snapshotId], map: "releases_snapshot_active_idx", where: raw("deleted_at IS NULL"))
+  @@unique([projectId, version], map: "releases_project_version_active_key", where: raw("deleted_at IS NULL"))
+  @@map("releases")
+}
+
+model Environment {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String    @db.VarChar(255)
+  description String?
+  color       String?   @db.VarChar(7)
+  position    Int
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  @@unique([position], map: "environments_position_active_key", where: raw("deleted_at IS NULL"))
+  @@unique([name], map: "environments_name_active_key", where: raw("deleted_at IS NULL"))
+  @@map("environments")
+}

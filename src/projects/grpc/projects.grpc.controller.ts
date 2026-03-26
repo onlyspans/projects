@@ -12,10 +12,13 @@ import {
   ProjectExistsResponse,
   HealthCheckRequest,
   HealthCheckResponse,
-  ProjectStatus as GrpcProjectStatus,
-  LifecycleStage as GrpcLifecycleStage,
+  GrpcProjectStatus,
+  Environment as GrpcEnvironment,
+  type GrpcProject,
 } from '../interfaces/grpc.interface';
-import { Project, ProjectStatus, LifecycleStage } from '../entities/project.entity';
+import { ProjectStatus } from '@database/generated/client';
+import type { Project } from '../types/project.types';
+import type { Environment } from '@database/generated/client';
 import { CreateProjectDto } from '../dto/create-project.dto';
 import { UpdateProjectDto } from '../dto/update-project.dto';
 import { QueryProjectsDto } from '../dto/query-projects.dto';
@@ -33,8 +36,9 @@ export class ProjectsGrpcController {
   }
 
   @GrpcMethod('ProjectsService', 'GetProject')
-  async getProject(data: GetProjectRequest): Promise<Project> {
-    return this.projectsService.findOne(data.id);
+  async getProject(data: GetProjectRequest): Promise<GrpcProject> {
+    const project = await this.projectsService.findOne(data.id);
+    return this.mapProjectToGrpc(project);
   }
 
   @GrpcMethod('ProjectsService', 'ListProjects')
@@ -59,35 +63,37 @@ export class ProjectsGrpcController {
   }
 
   @GrpcMethod('ProjectsService', 'CreateProject')
-  async createProject(data: CreateProjectRequest): Promise<Project> {
+  async createProject(data: CreateProjectRequest): Promise<GrpcProject> {
     const dto: CreateProjectDto = {
       name: data.name,
       slug: data.slug,
       description: data.description,
       status: data.status !== undefined ? this.mapGrpcProjectStatus(data.status) : undefined,
       ownerId: data.ownerId,
-      lifecycleStages: data.lifecycleStages?.map((stage) => this.mapGrpcLifecycleStage(stage)),
+      environmentIds: data.environmentIds,
       tagIds: data.tagIds,
       metadata: data.metadata,
     };
 
-    return this.projectsService.create(dto);
+    const project = await this.projectsService.create(dto);
+    return this.mapProjectToGrpc(project);
   }
 
   @GrpcMethod('ProjectsService', 'UpdateProject')
-  async updateProject(data: UpdateProjectRequest): Promise<Project> {
+  async updateProject(data: UpdateProjectRequest): Promise<GrpcProject> {
     const dto: UpdateProjectDto = {
       name: data.name,
       slug: data.slug,
       description: data.description,
       status: data.status !== undefined ? this.mapGrpcProjectStatus(data.status) : undefined,
       ownerId: data.ownerId,
-      lifecycleStages: data.lifecycleStages?.map((stage) => this.mapGrpcLifecycleStage(stage)),
+      environmentIds: data.environmentIds,
       tagIds: data.tagIds,
       metadata: data.metadata,
     };
 
-    return this.projectsService.update(data.id, dto);
+    const project = await this.projectsService.update(data.id, dto);
+    return this.mapProjectToGrpc(project);
   }
 
   @GrpcMethod('ProjectsService', 'DeleteProject')
@@ -101,36 +107,20 @@ export class ProjectsGrpcController {
     return { exists };
   }
 
-  // Helper methods for mapping between gRPC and internal types
   private mapGrpcProjectStatus(status: GrpcProjectStatus): ProjectStatus {
     switch (status) {
       case GrpcProjectStatus.PROJECT_STATUS_ACTIVE:
-        return ProjectStatus.ACTIVE;
+        return ProjectStatus.active;
       case GrpcProjectStatus.PROJECT_STATUS_ARCHIVED:
-        return ProjectStatus.ARCHIVED;
+        return ProjectStatus.archived;
       case GrpcProjectStatus.PROJECT_STATUS_SUSPENDED:
-        return ProjectStatus.SUSPENDED;
+        return ProjectStatus.suspended;
       default:
-        return ProjectStatus.ACTIVE;
+        return ProjectStatus.active;
     }
   }
 
-  private mapGrpcLifecycleStage(stage: GrpcLifecycleStage): LifecycleStage {
-    switch (stage) {
-      case GrpcLifecycleStage.LIFECYCLE_STAGE_DEVELOPMENT:
-        return LifecycleStage.DEVELOPMENT;
-      case GrpcLifecycleStage.LIFECYCLE_STAGE_TESTING:
-        return LifecycleStage.TESTING;
-      case GrpcLifecycleStage.LIFECYCLE_STAGE_STAGING:
-        return LifecycleStage.STAGING;
-      case GrpcLifecycleStage.LIFECYCLE_STAGE_PRODUCTION:
-        return LifecycleStage.PRODUCTION;
-      default:
-        return LifecycleStage.DEVELOPMENT;
-    }
-  }
-
-  private mapProjectToGrpc(project: Project): any {
+  private mapProjectToGrpc(project: Project): GrpcProject {
     return {
       id: project.id,
       name: project.name,
@@ -138,39 +128,34 @@ export class ProjectsGrpcController {
       description: project.description || '',
       status: this.mapProjectStatusToGrpc(project.status),
       ownerId: project.ownerId || '',
-      lifecycleStages: project.lifecycleStages.map((stage) => this.mapLifecycleStageToGrpc(stage)),
+      environments: (project.environments ?? []).map((e) => this.mapEnvironmentToGrpc(e)),
       tagIds: project.tags?.map((tag) => tag.id) || [],
-      metadata: project.metadata || {},
+      metadata: (project.metadata || {}) as Record<string, string>,
       createdAt: project.createdAt,
       updatedAt: project.updatedAt,
     };
   }
 
+  private mapEnvironmentToGrpc(env: Environment): GrpcEnvironment {
+    return {
+      id: env.id,
+      name: env.name,
+      description: env.description ?? '',
+      position: env.position,
+      color: env.color ?? '',
+    };
+  }
+
   private mapProjectStatusToGrpc(status: ProjectStatus): GrpcProjectStatus {
     switch (status) {
-      case ProjectStatus.ACTIVE:
+      case ProjectStatus.active:
         return GrpcProjectStatus.PROJECT_STATUS_ACTIVE;
-      case ProjectStatus.ARCHIVED:
+      case ProjectStatus.archived:
         return GrpcProjectStatus.PROJECT_STATUS_ARCHIVED;
-      case ProjectStatus.SUSPENDED:
+      case ProjectStatus.suspended:
         return GrpcProjectStatus.PROJECT_STATUS_SUSPENDED;
       default:
         return GrpcProjectStatus.PROJECT_STATUS_UNSPECIFIED;
-    }
-  }
-
-  private mapLifecycleStageToGrpc(stage: LifecycleStage): GrpcLifecycleStage {
-    switch (stage) {
-      case LifecycleStage.DEVELOPMENT:
-        return GrpcLifecycleStage.LIFECYCLE_STAGE_DEVELOPMENT;
-      case LifecycleStage.TESTING:
-        return GrpcLifecycleStage.LIFECYCLE_STAGE_TESTING;
-      case LifecycleStage.STAGING:
-        return GrpcLifecycleStage.LIFECYCLE_STAGE_STAGING;
-      case LifecycleStage.PRODUCTION:
-        return GrpcLifecycleStage.LIFECYCLE_STAGE_PRODUCTION;
-      default:
-        return GrpcLifecycleStage.LIFECYCLE_STAGE_UNSPECIFIED;
     }
   }
 }

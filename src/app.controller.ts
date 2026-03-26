@@ -1,12 +1,11 @@
 import { Controller, Get, HttpStatus, HttpException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
+import { DatabaseService } from '@database/database.service';
 
 @ApiTags('health')
 @Controller()
 export class AppController {
-  constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
+  constructor(private readonly database: DatabaseService) {}
 
   @Get('healthz')
   @ApiOperation({ summary: 'Liveness probe' })
@@ -21,7 +20,7 @@ export class AppController {
   @ApiResponse({ status: 503, description: 'Service is not ready' })
   async readyz(): Promise<{ status: string; database: string }> {
     try {
-      await this.dataSource.query('SELECT 1');
+      await this.database.$queryRaw`SELECT 1`;
       return {
         status: 'OK',
         database: 'connected',

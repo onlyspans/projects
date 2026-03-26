@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { TagsRepository } from '../repositories/tags.repository';
-import { Tag } from '../entities/tag.entity';
+import type { Tag } from '@database/generated/client';
 import { CreateTagDto } from '../dto/create-tag.dto';
 import { UpdateTagDto } from '../dto/update-tag.dto';
 import { QueryTagsDto } from '../dto/query-tags.dto';
@@ -63,7 +63,7 @@ export class TagsService {
       }
     }
 
-    const updateData: Partial<Tag> = {};
+    const updateData: { name?: string; description?: string | null; color?: string | null } = {};
     if (updateTagDto.name !== undefined) updateData.name = updateTagDto.name;
     if (updateTagDto.description !== undefined) updateData.description = updateTagDto.description;
     if (updateTagDto.color !== undefined) updateData.color = updateTagDto.color;

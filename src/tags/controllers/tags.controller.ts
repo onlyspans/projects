@@ -4,7 +4,7 @@ import { TagsService } from '../services/tags.service';
 import { CreateTagDto } from '../dto/create-tag.dto';
 import { UpdateTagDto } from '../dto/update-tag.dto';
 import { QueryTagsDto } from '../dto/query-tags.dto';
-import { Tag } from '../entities/tag.entity';
+import type { Tag } from '@database/generated/client';
 import { PaginatedResponse } from '@common/interfaces/paginated-response.interface';
 
 @ApiTags('tags')

@@ -12,7 +12,8 @@ RUN bun install --frozen-lockfile
 # Copy source code
 COPY . .
 
-# Build the application
+# prisma.config.ts resolves DATABASE_URL when Prisma loads; generate does not connect to the DB
+ENV DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build
 RUN bun run build
 
 # Production stage
@@ -36,12 +37,21 @@ COPY --from=builder /app/node_modules ./node_modules
 # Copy proto files (needed for gRPC)
 COPY --from=builder /app/src/proto ./dist/proto
 
+# Prisma: schema + migrations for `migrate deploy` at container start
+COPY --from=builder /app/prisma.config.ts ./
+COPY --from=builder /app/src/database/schema.prisma ./src/database/schema.prisma
+COPY --from=builder /app/src/database/migrations ./src/database/migrations
+
+COPY scripts/docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh && chown -R bun:bun ./prisma.config.ts ./src/database ./docker-entrypoint.sh
+
 # Expose ports
 EXPOSE 3000 5000
 
 USER bun
 
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
   CMD curl -f http://localhost:3000/healthz || exit 1
 
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["bun", "run", "start:prod"]

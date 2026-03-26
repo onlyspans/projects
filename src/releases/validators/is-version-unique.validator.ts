@@ -18,7 +18,11 @@ export class IsVersionUniqueConstraint implements ValidatorConstraintInterface {
       return true; // Let other validators handle empty values
     }
 
-    const [projectId, excludeId] = args.constraints;
+    const constraints = args.constraints as unknown[];
+    const rawProjectId = constraints[0];
+    const rawExcludeId = constraints[1];
+    const projectId = typeof rawProjectId === 'string' ? rawProjectId : undefined;
+    const excludeId = typeof rawExcludeId === 'string' ? rawExcludeId : undefined;
     if (!projectId) {
       return false;
     }

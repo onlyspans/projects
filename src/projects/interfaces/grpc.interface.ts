@@ -3,29 +3,31 @@
  * These interfaces match the Protocol Buffers definitions in projects.proto
  */
 
-export enum ProjectStatus {
+/** gRPC / Protocol Buffers enum (numeric), not the Prisma domain enum. */
+export enum GrpcProjectStatus {
   PROJECT_STATUS_UNSPECIFIED = 0,
   PROJECT_STATUS_ACTIVE = 1,
   PROJECT_STATUS_ARCHIVED = 2,
   PROJECT_STATUS_SUSPENDED = 3,
 }
 
-export enum LifecycleStage {
-  LIFECYCLE_STAGE_UNSPECIFIED = 0,
-  LIFECYCLE_STAGE_DEVELOPMENT = 1,
-  LIFECYCLE_STAGE_TESTING = 2,
-  LIFECYCLE_STAGE_STAGING = 3,
-  LIFECYCLE_STAGE_PRODUCTION = 4,
+export interface Environment {
+  id: string;
+  name: string;
+  description?: string;
+  position: number;
+  color?: string;
 }
 
-export interface Project {
+/** Serialized Project message for gRPC responses. */
+export interface GrpcProject {
   id: string;
   name: string;
   slug: string;
-  description?: string;
-  status: ProjectStatus;
-  ownerId?: string;
-  lifecycleStages: LifecycleStage[];
+  description: string;
+  status: GrpcProjectStatus;
+  ownerId: string;
+  environments: Environment[];
   tagIds: string[];
   metadata: Record<string, string>;
   createdAt?: Date | string;
@@ -38,7 +40,7 @@ export interface GetProjectRequest {
 
 export interface ListProjectsRequest {
   ownerId?: string;
-  status?: ProjectStatus;
+  status?: GrpcProjectStatus;
   page?: number;
   pageSize?: number;
   search?: string;
@@ -46,7 +48,7 @@ export interface ListProjectsRequest {
 }
 
 export interface ListProjectsResponse {
-  items: Project[];
+  items: GrpcProject[];
   total: number;
   page: number;
   pageSize: number;
@@ -56,9 +58,9 @@ export interface CreateProjectRequest {
   name: string;
   slug: string;
   description?: string;
-  status?: ProjectStatus;
+  status?: GrpcProjectStatus;
   ownerId?: string;
-  lifecycleStages?: LifecycleStage[];
+  environmentIds?: string[];
   tagIds?: string[];
   metadata?: Record<string, string>;
 }
@@ -68,9 +70,9 @@ export interface UpdateProjectRequest {
   name?: string;
   slug?: string;
   description?: string;
-  status?: ProjectStatus;
+  status?: GrpcProjectStatus;
   ownerId?: string;
-  lifecycleStages?: LifecycleStage[];
+  environmentIds?: string[];
   tagIds?: string[];
   metadata?: Record<string, string>;
 }
