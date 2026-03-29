@@ -4,12 +4,17 @@ import { getEnvOrThrow } from '../config.utils';
 
 export type { ApplicationConfig };
 
-export function getCorsConfig(): { origin: string | string[]; credentials: boolean } {
-  const corsOrigin = getEnvOrThrow('CORS_ORIGIN').trim();
-  const isWildcard = corsOrigin === '*';
+export function getCorsConfig(): {
+  origin: true;
+  methods: string;
+  allowedHeaders: string;
+  credentials: boolean;
+} {
   return {
-    origin: isWildcard ? '*' : corsOrigin.split(',').map((o) => o.trim()),
-    credentials: !isWildcard,
+    origin: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: '*',
+    credentials: true,
   };
 }
 
