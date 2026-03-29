@@ -49,11 +49,11 @@ export class QueryRecentReleasesDto {
 
   @ApiPropertyOptional({ description: 'Case-insensitive substring match on project name only' })
   @IsOptional()
-  @IsString()
-  @Transform(({ value }) => {
-    if (typeof value !== 'string') return undefined;
+  @Transform(({ value }: { value: unknown }) => {
+    if (typeof value !== 'string') return value;
     const t = value.trim();
     return t.length ? t : undefined;
   })
+  @IsString()
   search?: string;
 }

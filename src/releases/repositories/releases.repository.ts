@@ -92,22 +92,37 @@ export class ReleasesRepository {
       )
     `;
 
-    const [countRows, idRows] = await this.db.$transaction([
-      this.db.$queryRaw<{ count: number }[]>(Prisma.sql`
+    const { total, orderedIds, releases } = await this.db.$transaction(async (tx) => {
+      const countRows = await tx.$queryRaw<{ count: number }[]>(Prisma.sql`
         ${latestCte}
         SELECT COUNT(*)::int AS count FROM latest
-      `),
-      this.db.$queryRaw<{ id: string }[]>(Prisma.sql`
+      `);
+      const idRows = await tx.$queryRaw<{ id: string }[]>(Prisma.sql`
         ${latestCte}
         SELECT id FROM latest
         ORDER BY created_at DESC, sort_id DESC
         LIMIT ${take} OFFSET ${skip}
-      `),
-    ]);
+      `);
+      const total = countRows[0]?.count ?? 0;
+      const orderedIds = idRows.map((row) => row.id);
 
-    const total = countRows[0]?.count ?? 0;
+      if (orderedIds.length === 0) {
+        return { total, orderedIds, releases: [] as Release[] };
+      }
+
+      const releases = await tx.release.findMany({
+        where: {
+          id: { in: orderedIds },
+          deletedAt: null,
+          project: { deletedAt: null },
+        },
+        include: releaseWithProjectInclude,
+      });
+
+      return { total, orderedIds, releases };
+    });
+
     const totalPages = calculateTotalPages(total, take);
-    const orderedIds = idRows.map((row) => row.id);
 
     if (orderedIds.length === 0) {
       return {
@@ -119,10 +134,6 @@ export class ReleasesRepository {
       };
     }
 
-    const releases = await this.db.release.findMany({
-      where: { id: { in: orderedIds } },
-      include: releaseWithProjectInclude,
-    });
     const byId = new Map(releases.map((r) => [r.id, r]));
     const items = orderedIds.map((id) => {
       const row = byId.get(id);
