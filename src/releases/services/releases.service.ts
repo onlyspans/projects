@@ -49,7 +49,7 @@ export class ReleasesService {
       search: query.search,
     });
     await this.environmentsRepository.attachToProjects(result.items.map((r) => r.project));
-    return result as PaginatedResponse<ReleaseWithProjectEnvironments>;
+    return result;
   }
 
   /**

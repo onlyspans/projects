@@ -3,7 +3,14 @@ import { Prisma } from '@database/generated/client';
 import { DatabaseService } from '@database/database.service';
 import { PaginatedResponse } from '@common/interfaces/paginated-response.interface';
 import { calculatePagination, calculateTotalPages } from '@common/utils/pagination.util';
-import { releaseWithProjectInclude, type Release } from '../types/release.types';
+import {
+  releaseWithProjectInclude,
+  releaseRecentWithProjectInclude,
+  mapRecentReleaseFromDb,
+  type Release,
+  type ReleaseRecentFromDb,
+  type ReleaseWithProjectEnvironments,
+} from '../types/release.types';
 
 /** Escape `%`, `_`, and `\` for use in `ILIKE ... ESCAPE '\\'`. */
 function escapeIlikePattern(value: string): string {
@@ -61,7 +68,9 @@ export class ReleasesRepository {
     };
   }
 
-  async findRecentPerProject(options: FindRecentReleasesOptions = {}): Promise<PaginatedResponse<Release>> {
+  async findRecentPerProject(
+    options: FindRecentReleasesOptions = {},
+  ): Promise<PaginatedResponse<ReleaseWithProjectEnvironments>> {
     const { page = 1, pageSize = 20, tagIds, search } = options;
     const { skip, take } = calculatePagination(page, pageSize);
 
@@ -107,7 +116,7 @@ export class ReleasesRepository {
       const orderedIds = idRows.map((row) => row.id);
 
       if (orderedIds.length === 0) {
-        return { total, orderedIds, releases: [] as Release[] };
+        return { total, orderedIds, releases: [] as ReleaseRecentFromDb[] };
       }
 
       const releases = await tx.release.findMany({
@@ -116,7 +125,7 @@ export class ReleasesRepository {
           deletedAt: null,
           project: { deletedAt: null },
         },
-        include: releaseWithProjectInclude,
+        include: releaseRecentWithProjectInclude,
       });
 
       return { total, orderedIds, releases };
@@ -140,7 +149,7 @@ export class ReleasesRepository {
       if (!row) {
         throw new Error(`Release ${id} not found after recent-per-project query`);
       }
-      return row;
+      return mapRecentReleaseFromDb(row);
     });
 
     return {

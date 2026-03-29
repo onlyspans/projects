@@ -14,7 +14,7 @@ export class RecentReleasesController {
   @ApiOperation({
     summary: 'Recent releases (one latest release per project)',
     description:
-      'Newest non-deleted release per non-deleted project, ordered by release date. Filters: tagIds (OR), search (project name). Each item includes project with environments.',
+      'Newest non-deleted release per non-deleted project, ordered by release date. Filters: tagIds (OR), search (project name). Each item includes project with tags and environments.',
   })
   @ApiResponse({ status: 200, description: 'Paginated list of releases', type: Object })
   async findRecent(@Query() query: QueryRecentReleasesDto): Promise<PaginatedResponse<ReleaseWithProjectEnvironments>> {
