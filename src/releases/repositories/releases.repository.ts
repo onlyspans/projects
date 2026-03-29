@@ -3,13 +3,32 @@ import { Prisma } from '@database/generated/client';
 import { DatabaseService } from '@database/database.service';
 import { PaginatedResponse } from '@common/interfaces/paginated-response.interface';
 import { calculatePagination, calculateTotalPages } from '@common/utils/pagination.util';
-import { releaseWithProjectInclude, type Release } from '../types/release.types';
+import {
+  releaseWithProjectInclude,
+  releaseRecentWithProjectInclude,
+  mapRecentReleaseFromDb,
+  type Release,
+  type ReleaseRecentFromDb,
+  type ReleaseWithProjectEnvironments,
+} from '../types/release.types';
+
+/** Escape `%`, `_`, and `\` for use in `ILIKE ... ESCAPE '\\'`. */
+function escapeIlikePattern(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+}
 
 export interface FindReleasesOptions {
   projectId: string;
   page?: number;
   pageSize?: number;
   version?: string;
+}
+
+export interface FindRecentReleasesOptions {
+  page?: number;
+  pageSize?: number;
+  tagIds?: string[];
+  search?: string;
 }
 
 @Injectable()
@@ -39,6 +58,99 @@ export class ReleasesRepository {
     ]);
 
     const totalPages = calculateTotalPages(total, take);
+
+    return {
+      items,
+      total,
+      page,
+      pageSize: take,
+      totalPages,
+    };
+  }
+
+  async findRecentPerProject(
+    options: FindRecentReleasesOptions = {},
+  ): Promise<PaginatedResponse<ReleaseWithProjectEnvironments>> {
+    const { page = 1, pageSize = 20, tagIds, search } = options;
+    const { skip, take } = calculatePagination(page, pageSize);
+
+    const tagCondition = tagIds?.length
+      ? Prisma.sql`AND EXISTS (
+          SELECT 1 FROM project_tags pt
+          WHERE pt.project_id = p.id AND pt.tag_id IN (${Prisma.join(tagIds)})
+        )`
+      : Prisma.empty;
+
+    const searchTrimmed = search?.trim();
+    const searchCondition = searchTrimmed
+      ? Prisma.sql`AND p.name ILIKE ${`%${escapeIlikePattern(searchTrimmed)}%`} ESCAPE '\\'`
+      : Prisma.empty;
+
+    const latestCte = Prisma.sql`
+      WITH latest AS (
+        SELECT DISTINCT ON (r.project_id)
+          r.id,
+          r.created_at,
+          r.id AS sort_id
+        FROM releases r
+        INNER JOIN projects p ON p.id = r.project_id AND p.deleted_at IS NULL
+        WHERE r.deleted_at IS NULL
+        ${tagCondition}
+        ${searchCondition}
+        ORDER BY r.project_id, r.created_at DESC, r.id DESC
+      )
+    `;
+
+    const { total, orderedIds, releases } = await this.db.$transaction(async (tx) => {
+      const countRows = await tx.$queryRaw<{ count: number }[]>(Prisma.sql`
+        ${latestCte}
+        SELECT COUNT(*)::int AS count FROM latest
+      `);
+      const idRows = await tx.$queryRaw<{ id: string }[]>(Prisma.sql`
+        ${latestCte}
+        SELECT id FROM latest
+        ORDER BY created_at DESC, sort_id DESC
+        LIMIT ${take} OFFSET ${skip}
+      `);
+      const total = countRows[0]?.count ?? 0;
+      const orderedIds = idRows.map((row) => row.id);
+
+      if (orderedIds.length === 0) {
+        return { total, orderedIds, releases: [] as ReleaseRecentFromDb[] };
+      }
+
+      const releases = await tx.release.findMany({
+        where: {
+          id: { in: orderedIds },
+          deletedAt: null,
+          project: { deletedAt: null },
+        },
+        include: releaseRecentWithProjectInclude,
+      });
+
+      return { total, orderedIds, releases };
+    });
+
+    const totalPages = calculateTotalPages(total, take);
+
+    if (orderedIds.length === 0) {
+      return {
+        items: [],
+        total,
+        page,
+        pageSize: take,
+        totalPages,
+      };
+    }
+
+    const byId = new Map(releases.map((r) => [r.id, r]));
+    const items = orderedIds.map((id) => {
+      const row = byId.get(id);
+      if (!row) {
+        throw new Error(`Release ${id} not found after recent-per-project query`);
+      }
+      return mapRecentReleaseFromDb(row);
+    });
 
     return {
       items,

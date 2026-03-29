@@ -2,10 +2,11 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { Prisma } from '@database/generated/client';
 import { ReleasesRepository } from '../repositories/releases.repository';
 import { ProjectsService } from '@projects/services/projects.service';
-import type { Release } from '../types/release.types';
+import { EnvironmentsRepository } from '@environments/repositories/environments.repository';
+import type { Release, ReleaseWithProjectEnvironments } from '../types/release.types';
 import { CreateReleaseDto } from '../dto/create-release.dto';
 import { UpdateReleaseDto } from '../dto/update-release.dto';
-import { QueryReleasesDto } from '../dto/query-releases.dto';
+import { QueryReleasesDto, QueryRecentReleasesDto } from '../dto/query-releases.dto';
 import { PaginatedResponse } from '@common/interfaces/paginated-response.interface';
 import { ReleaseStructure } from '../interfaces/release-structure.interface';
 
@@ -14,6 +15,7 @@ export class ReleasesService {
   constructor(
     private readonly releasesRepository: ReleasesRepository,
     private readonly projectsService: ProjectsService,
+    private readonly environmentsRepository: EnvironmentsRepository,
   ) {}
 
   /**
@@ -32,6 +34,22 @@ export class ReleasesService {
       pageSize: query.pageSize,
       version: query.version,
     });
+  }
+
+  /**
+   * Latest release per active project (paginated), with `project.environments` attached.
+   */
+  async findRecentPerProject(
+    query: QueryRecentReleasesDto,
+  ): Promise<PaginatedResponse<ReleaseWithProjectEnvironments>> {
+    const result = await this.releasesRepository.findRecentPerProject({
+      page: query.page,
+      pageSize: query.pageSize,
+      tagIds: query.tagIds,
+      search: query.search,
+    });
+    await this.environmentsRepository.attachToProjects(result.items.map((r) => r.project));
+    return result;
   }
 
   /**
