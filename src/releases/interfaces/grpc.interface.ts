@@ -22,6 +22,11 @@ export interface GetReleaseRequest {
   id: string;
 }
 
+export interface GetReleaseByProjectAndVersionRequest {
+  projectId: string;
+  version: string;
+}
+
 export interface ListReleasesRequest {
   projectId: string;
   page?: number;

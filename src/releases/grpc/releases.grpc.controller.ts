@@ -3,6 +3,7 @@ import { GrpcMethod } from '@nestjs/microservices';
 import { ReleasesService } from '../services/releases.service';
 import {
   GetReleaseRequest,
+  GetReleaseByProjectAndVersionRequest,
   ListReleasesRequest,
   ListReleasesResponse,
   CreateReleaseRequest,
@@ -36,6 +37,12 @@ export class ReleasesGrpcController {
   @GrpcMethod('ReleasesService', 'GetRelease')
   async getRelease(data: GetReleaseRequest): Promise<GrpcRelease> {
     const release = await this.releasesService.findOne(data.id);
+    return this.mapReleaseToGrpc(release);
+  }
+
+  @GrpcMethod('ReleasesService', 'GetReleaseByProjectAndVersion')
+  async getReleaseByProjectAndVersion(data: GetReleaseByProjectAndVersionRequest): Promise<GrpcRelease> {
+    const release = await this.releasesService.findActiveByProjectAndVersion(data.projectId, data.version);
     return this.mapReleaseToGrpc(release);
   }
 

@@ -67,6 +67,23 @@ export class ReleasesService {
   }
 
   /**
+   * Get active release by (projectId, version).
+   */
+  async findActiveByProjectAndVersion(projectId: string, version: string): Promise<Release> {
+    const projectExists = await this.projectsService.exists(projectId);
+    if (!projectExists) {
+      throw new NotFoundException(`Project with ID ${projectId} not found`);
+    }
+
+    const release = await this.releasesRepository.findByProjectAndVersion(projectId, version);
+    if (!release) {
+      throw new NotFoundException(`Release with version "${version}" not found for project ${projectId}`);
+    }
+
+    return release;
+  }
+
+  /**
    * Create a new release
    */
   async create(projectId: string, createReleaseDto: CreateReleaseDto): Promise<Release> {

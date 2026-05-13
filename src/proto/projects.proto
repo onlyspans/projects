@@ -138,6 +138,11 @@ message GetReleaseRequest {
   string id = 1;
 }
 
+message GetReleaseByProjectAndVersionRequest {
+  string project_id = 1;
+  string version = 2;
+}
+
 message ListReleasesRequest {
   string project_id = 1;
   int32 page = 2;
@@ -221,6 +226,9 @@ service ProjectsService {
 service ReleasesService {
   // Получить релиз по ID
   rpc GetRelease(GetReleaseRequest) returns (Release);
+
+  // Получить активный релиз по (project_id, version)
+  rpc GetReleaseByProjectAndVersion(GetReleaseByProjectAndVersionRequest) returns (Release);
   
   // Получить список релизов проекта
   rpc ListReleases(ListReleasesRequest) returns (ListReleasesResponse);
