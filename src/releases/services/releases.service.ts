@@ -213,8 +213,28 @@ export class ReleasesService {
     const release = await this.findOne(id);
     const project = await this.projectsService.findOne(release.projectId);
 
-    if (!release.structure || Object.keys(release.structure).length === 0) {
-      throw new NotFoundException(`Release structure not found for release ${id}`);
+    const emptyConfig = {
+      processes: [],
+      variables: {} as Record<string, string>,
+      assets: [],
+    };
+
+    const raw = release.structure;
+    const hasStoredStructure =
+      raw !== null &&
+      typeof raw === 'object' &&
+      !Array.isArray(raw) &&
+      Object.keys(raw as object).length > 0;
+
+    if (!hasStoredStructure) {
+      return {
+        projectId: release.projectId,
+        projectName: project.name,
+        version: release.version,
+        snapshotId: release.snapshotId || '',
+        config: emptyConfig,
+        metadata: {},
+      };
     }
 
     return {
@@ -223,11 +243,7 @@ export class ReleasesService {
       version: release.version,
       snapshotId: release.snapshotId || '',
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-member-access
-      config: (release.structure as any).config || {
-        processes: [],
-        variables: {},
-        assets: [],
-      },
+      config: (release.structure as any).config || emptyConfig,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-member-access
       metadata: (release.structure as any).metadata || {},
     };

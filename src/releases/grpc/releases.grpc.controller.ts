@@ -1,4 +1,4 @@
-import { Controller } from '@nestjs/common';
+import { BadRequestException, Controller } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import { ReleasesService } from '../services/releases.service';
 import {
@@ -31,6 +31,23 @@ function grpcMetadataFromJson(value: unknown): Record<string, string> {
   return {};
 }
 
+/** @grpc/grpc-js may pass proto snake_case or camelCase; DTOs use camelCase. */
+function wireProjectId(data: { projectId?: string; project_id?: string }): string {
+  const id = data.projectId ?? data.project_id ?? '';
+  if (!id) {
+    throw new BadRequestException('project_id / projectId is required');
+  }
+  return id;
+}
+
+function wirePageSize(data: { pageSize?: number; page_size?: number }): number | undefined {
+  return data.pageSize ?? data.page_size;
+}
+
+function wireSnapshotId(data: { snapshotId?: string; snapshot_id?: string }): string | undefined {
+  return data.snapshotId ?? data.snapshot_id;
+}
+
 @Controller()
 export class ReleasesGrpcController {
   constructor(private readonly releasesService: ReleasesService) {}
@@ -43,14 +60,17 @@ export class ReleasesGrpcController {
 
   @GrpcMethod('ReleasesService', 'GetReleaseByProjectAndVersion')
   async getReleaseByProjectAndVersion(data: GetReleaseByProjectAndVersionRequest): Promise<GrpcRelease> {
-    const release = await this.releasesService.findActiveByProjectAndVersion(data.projectId, data.version);
+    const release = await this.releasesService.findActiveByProjectAndVersion(
+      wireProjectId(data),
+      data.version,
+    );
     return this.mapReleaseToGrpc(release);
   }
 
   @GrpcMethod('ReleasesService', 'EnsureReleaseByProjectAndVersion')
   async ensureReleaseByProjectAndVersion(data: EnsureReleaseByProjectAndVersionRequest): Promise<GrpcRelease> {
     const release = await this.releasesService.ensureActiveByProjectAndVersion(
-      data.projectId,
+      wireProjectId(data),
       data.version,
       data.metadata,
     );
@@ -61,11 +81,11 @@ export class ReleasesGrpcController {
   async listReleases(data: ListReleasesRequest): Promise<ListReleasesResponse> {
     const query: QueryReleasesDto = {
       page: data.page,
-      pageSize: data.pageSize,
+      pageSize: wirePageSize(data),
       version: data.version,
     };
 
-    const result = await this.releasesService.findAll(data.projectId, query);
+    const result = await this.releasesService.findAll(wireProjectId(data), query);
 
     return {
       items: result.items.map((item) => this.mapReleaseToGrpc(item)),
@@ -85,14 +105,14 @@ export class ReleasesGrpcController {
       metadata: data.metadata,
     };
 
-    const release = await this.releasesService.create(data.projectId, dto);
+    const release = await this.releasesService.create(wireProjectId(data), dto);
     return this.mapReleaseToGrpc(release);
   }
 
   @GrpcMethod('ReleasesService', 'UpdateRelease')
   async updateRelease(data: UpdateReleaseRequest): Promise<GrpcRelease> {
     const dto: UpdateReleaseDto = {
-      snapshotId: data.snapshotId,
+      snapshotId: wireSnapshotId(data),
       changelog: data.changelog,
       notes: data.notes,
       structure: data.structure,
@@ -105,7 +125,11 @@ export class ReleasesGrpcController {
 
   @GrpcMethod('ReleasesService', 'UpdateReleaseStructure')
   async updateReleaseStructure(data: UpdateReleaseStructureRequest): Promise<GrpcRelease> {
-    const release = await this.releasesService.updateStructure(data.id, data.snapshotId, data.structure);
+    const snapshotId = wireSnapshotId(data);
+    if (!snapshotId) {
+      throw new BadRequestException('snapshot_id is required');
+    }
+    const release = await this.releasesService.updateStructure(data.id, snapshotId, data.structure);
     return this.mapReleaseToGrpc(release);
   }
 
