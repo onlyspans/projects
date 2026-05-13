@@ -27,6 +27,12 @@ export interface GetReleaseByProjectAndVersionRequest {
   version: string;
 }
 
+export interface EnsureReleaseByProjectAndVersionRequest {
+  projectId: string;
+  version: string;
+  metadata?: Record<string, string>;
+}
+
 export interface ListReleasesRequest {
   projectId: string;
   page?: number;

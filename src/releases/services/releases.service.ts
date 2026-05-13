@@ -18,6 +18,10 @@ export class ReleasesService {
     private readonly environmentsRepository: EnvironmentsRepository,
   ) {}
 
+  private isUniqueConstraintError(error: unknown): boolean {
+    return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
+  }
+
   /**
    * Get paginated list of releases for a project
    */
@@ -81,6 +85,48 @@ export class ReleasesService {
     }
 
     return release;
+  }
+
+  /**
+   * Find or create release by (projectId, version) and return it.
+   * Used by snapper to obtain a stable releaseId without relying on side-effects.
+   */
+  async ensureActiveByProjectAndVersion(
+    projectId: string,
+    version: string,
+    metadata?: Prisma.JsonObject | Record<string, string>,
+  ): Promise<Release> {
+    const projectExists = await this.projectsService.exists(projectId);
+    if (!projectExists) {
+      throw new NotFoundException(`Project with ID ${projectId} not found`);
+    }
+
+    const existing = await this.releasesRepository.findByProjectAndVersion(projectId, version);
+    if (existing) {
+      return existing;
+    }
+
+    try {
+      const created = await this.releasesRepository.create({
+        projectId,
+        version,
+        structure: {} as Prisma.InputJsonValue,
+        metadata: (metadata ?? {}) as Prisma.InputJsonValue,
+      });
+
+      return this.findOne(created.id);
+    } catch (err: unknown) {
+      if (!this.isUniqueConstraintError(err)) {
+        throw err;
+      }
+
+      // Race condition: another request created the same (projectId, version).
+      const reread = await this.releasesRepository.findByProjectAndVersion(projectId, version);
+      if (!reread) {
+        throw new ConflictException(`Release with version "${version}" already exists for this project`);
+      }
+      return reread;
+    }
   }
 
   /**

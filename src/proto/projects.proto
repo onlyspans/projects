@@ -143,6 +143,12 @@ message GetReleaseByProjectAndVersionRequest {
   string version = 2;
 }
 
+message EnsureReleaseByProjectAndVersionRequest {
+  string project_id = 1;
+  string version = 2;
+  map<string, string> metadata = 3;
+}
+
 message ListReleasesRequest {
   string project_id = 1;
   int32 page = 2;
@@ -229,6 +235,9 @@ service ReleasesService {
 
   // Получить активный релиз по (project_id, version)
   rpc GetReleaseByProjectAndVersion(GetReleaseByProjectAndVersionRequest) returns (Release);
+
+  // Найти или создать релиз по (project_id, version)
+  rpc EnsureReleaseByProjectAndVersion(EnsureReleaseByProjectAndVersionRequest) returns (Release);
   
   // Получить список релизов проекта
   rpc ListReleases(ListReleasesRequest) returns (ListReleasesResponse);

@@ -4,6 +4,7 @@ import { ReleasesService } from '../services/releases.service';
 import {
   GetReleaseRequest,
   GetReleaseByProjectAndVersionRequest,
+  EnsureReleaseByProjectAndVersionRequest,
   ListReleasesRequest,
   ListReleasesResponse,
   CreateReleaseRequest,
@@ -43,6 +44,16 @@ export class ReleasesGrpcController {
   @GrpcMethod('ReleasesService', 'GetReleaseByProjectAndVersion')
   async getReleaseByProjectAndVersion(data: GetReleaseByProjectAndVersionRequest): Promise<GrpcRelease> {
     const release = await this.releasesService.findActiveByProjectAndVersion(data.projectId, data.version);
+    return this.mapReleaseToGrpc(release);
+  }
+
+  @GrpcMethod('ReleasesService', 'EnsureReleaseByProjectAndVersion')
+  async ensureReleaseByProjectAndVersion(data: EnsureReleaseByProjectAndVersionRequest): Promise<GrpcRelease> {
+    const release = await this.releasesService.ensureActiveByProjectAndVersion(
+      data.projectId,
+      data.version,
+      data.metadata,
+    );
     return this.mapReleaseToGrpc(release);
   }
 
